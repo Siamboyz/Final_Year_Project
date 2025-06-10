@@ -62,7 +62,7 @@ while ($row = mysqli_fetch_assoc($q8)) {
             line-height: 1.6;
         }
     </style>
-princess</head>
+</head>
 <body>
 <?php include 'header_admin.php'; ?>
 <div class="main-container">
