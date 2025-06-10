@@ -1,4 +1,5 @@
 <?php
+session_start();
 // admin_monitoring.php - Real-Time Queue Monitoring for Admin
 
 // Include the database connection file.
