@@ -1,0 +1,40 @@
+/* General Page Styling */
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    flex-direction: column;
+    background-color: #F5F5F5; /* Light Gray - Neutral Base */
+    color: #333; /* Dark Gray - Text & Contrast */
+}
+
+.main-container {
+    flex-grow: 1; /* Pushes footer to the bottom */
+    padding: 10px 30px;
+    display: flex;
+    flex-direction: column;
+    background-color: #FFFFFF; /* Keeping White for clarity */
+    text-align: justify;
+    margin-left: calc(100% - 80%);
+    max-width: 100%;
+    min-height: calc(100vh - 120px); /* Adjust for header & footer */
+}
+
+/* Dashboard Content */
+.dashboard {
+    flex-grow: 1;
+    padding-bottom: 60px; /* Ensures space for footer */
+}
+
+.dashboard h1 {
+    font-size: 2.5rem;
+    color: #005A9C; /* Deep Blue - Professional & Primary */
+    margin-bottom: 1rem;
+}
+
+.dashboard p {
+    font-size: 1rem;
+    color: #008080; /* Teal - Accent for readability */
+    line-height: 1.6;
+    margin: 0 auto;
+}
+

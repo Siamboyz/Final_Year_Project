@@ -1,0 +1,190 @@
+/* General Body Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image: url("../img/doctor-testing-patient-eyesight.jpg"); /* Adjusted path */
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 25px 20px;
+    background-color: #005A9C; /* Deep Blue - Professional & Primary */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+}
+
+.navbar .logo {
+    position: absolute;
+    left: 20px;
+    font-size: 30px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 1px black;
+    text-decoration: none;
+}
+
+.navbar .menu {
+    display: flex;
+    list-style: none;
+    gap: 40px;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar .menu li a {
+    text-decoration: none;
+    color: white;
+    font-size: 18px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.navbar .menu li a:hover {
+    color: #004C4C; /* Dark Teal - Professional Contrast */
+}
+
+/* Login Container */
+.login-container {
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    position: absolute;
+    top: 50%;
+    right: 150px;
+    transform: translateY(-50%);
+}
+
+h1 {
+    font-size: 28px;
+    color: #005A9C; /* Deep Blue - Professional */
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #005A9C; /* Deep Blue Border */
+    display: inline-block;
+}
+
+h2 {
+    font-size: 20px;
+    color: #005A9C; /* Deep Blue */
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+p {
+    font-size: 14px;
+    color: #008080; /* Teal - Accent */
+    text-align: left;
+    margin: 10px 0;
+}
+
+/* Login Box */
+.login-box {
+    background-color: #FFFFFF;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Form Inputs */
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+label {
+    display: block;
+    font-size: 14px;
+    color: #005A9C; /* Deep Blue */
+    margin-bottom: 5px;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #008080; /* Teal Border */
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+/* Forgot Password */
+.forgot-password {
+    font-size: 14px;
+    color: #008080; /* Teal */
+    text-decoration: none;
+    display: block;
+    margin-top: 10px;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+}
+
+/* Login Button */
+.login-button {
+    width: 100%;
+    background-color: #005A9C; /* Deep Blue */
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.login-button span {
+    font-size: 20px;
+}
+
+.login-button:hover {
+    background-color: #004C4C; /* Darker Teal */
+}
+
+/* Register Link */
+.register-link {
+    font-size: 14px;
+    margin-top: 15px;
+}
+
+.register-link a {
+    color: #008080; /* Teal */
+    text-decoration: none;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}
+
+/* Footer */
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #F5F5F5; /* Light Gray - Neutral */
+    font-size: 12px;
+    color: #008080; /* Teal - Accent */
+    text-align: center;
+    padding: 10px 0;
+    box-shadow: 0px -2px 6px rgba(0, 0, 0, 0.1);
+}

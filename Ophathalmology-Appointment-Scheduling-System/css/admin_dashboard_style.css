@@ -1,0 +1,35 @@
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    flex-direction: column;
+    background-color: white; /* Consistent background color */
+    color: #333; /* Text color */
+}
+
+.main-container {
+    padding: 10px 30px;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    text-align: justify;
+    margin-left: calc(100% - 80%);
+    max-width: 100%; /* Limits the content width */
+}
+
+
+.dashboard {
+    width: 100%;
+}
+
+.dashboard h1 {
+    font-size: 2.5rem; /* Responsive font size */
+    color: #333; /* Strong text color */
+    margin-bottom: 1rem;
+}
+
+.dashboard p {
+    font-size: 1rem;
+    color: #666; /* Softer text color */
+    line-height: 1.6;
+    margin: 0 auto;
+}
