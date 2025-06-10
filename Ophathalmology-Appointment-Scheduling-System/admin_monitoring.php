@@ -5,6 +5,11 @@
 // Ensure 'connection_database.php' exists and properly establishes $conn.
 include 'connection_database.php';
 
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header("Location: homepage.php");
+    exit();
+}
+
 // Get the current date and time in 'YYYY-MM-DD HH:MM:SS' format.
 $currentTime = date('Y-m-d H:i:s');
 
