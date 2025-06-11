@@ -42,7 +42,7 @@ $sql = "SELECT
             a.apt_status IN ('Now Serving', 'Paused', 'Emergency')
             AND a.apt_date = '$currentDate'
         ORDER BY
-            a.apt_time";
+            r.room_name";
 
 // Execute the SQL query.
 $result = mysqli_query($conn, $sql);
