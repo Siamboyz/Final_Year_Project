@@ -11,85 +11,23 @@ date_default_timezone_set('Asia/Kuala_Lumpur');
 
 $today = date("Y-m-d");
 
+// These counts are typically static overall counts, not date-range specific.
+// They are fetched once on page load and remain constant.
 $patients = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) FROM patient"))[0];
 $doctors = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) FROM doctor"))[0];
-$appointmentsToday = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) FROM appointment WHERE DATE(apt_date) = CURDATE()"))[0];
-$completedAppointments = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) FROM appointment WHERE apt_status = 'Completed'"))[0];
 $staff = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) AS total_staff FROM counter_staff"))[0];
 $room = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) AS total_rooms FROM room"))[0];
-$missed = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) AS missed FROM appointment WHERE apt_date = '$today' AND apt_status = 'Missed'"))[0];
 
+
+// Data for monthly and no-show charts (full year overview, not date range filtered)
 $monthlyData = [];
 for ($i = 1; $i <= 12; $i++) {
     $res = mysqli_query($conn, "SELECT COUNT(*) AS total FROM appointment WHERE MONTH(apt_date) = $i AND YEAR(apt_date) = YEAR(CURDATE())");
     $monthlyData[] = mysqli_fetch_array($res)['total'];
 }
 
-$visitTypes = [];
-$res = mysqli_query($conn, "SELECT visit_type, COUNT(*) as total FROM appointment GROUP BY visit_type");
-while ($row = mysqli_fetch_assoc($res)) {
-    $visitTypes[$row['visit_type']] = $row['total'];
-}
-
-// Prepare labels and data for visit types for Chart.js
-$visitTypesLabels = array_keys($visitTypes);
-$visitTypesData = array_values($visitTypes);
-
-$doctorNames = [];
-$doctorCounts = [];
-$res = mysqli_query($conn, "
-    SELECT d.name, COUNT(a.apt_id) AS total
-    FROM doctor d
-    LEFT JOIN appointment a ON a.doctor_id = d.doctor_id
-    GROUP BY d.doctor_id
-    ORDER BY total DESC
-    LIMIT 5
-");
-while ($row = mysqli_fetch_assoc($res)) {
-    $doctorNames[] = $row['name'];
-    $doctorCounts[] = $row['total'];
-}
-
-// New Enhancement Data
-$waitLabels = $waitData = [];
-$res = mysqli_query($conn, "
-    SELECT visit_type, AVG(TIMESTAMPDIFF(MINUTE, validated_datetime, CONCAT(apt_date, ' ', apt_time))) AS avg_wait
-    FROM appointment
-    WHERE validated_datetime IS NOT NULL AND apt_time IS NOT NULL
-    GROUP BY visit_type
-");
-while ($row = mysqli_fetch_assoc($res)) {
-    $waitLabels[] = $row['visit_type'];
-    $waitData[] = round($row['avg_wait'], 1);
-}
-
-$utilLabels = $utilData = [];
-$res = mysqli_query($conn, "
-    SELECT d.name, SUM(a.duration_minutes) AS total_minutes
-    FROM doctor d
-    LEFT JOIN appointment a ON d.doctor_id = a.doctor_id
-    GROUP BY d.doctor_id
-");
-while ($row = mysqli_fetch_assoc($res)) {
-    $utilLabels[] = $row['name'];
-    $utilData[] = round(($row['total_minutes'] / 480) * 100, 1);
-}
-
-$doctorLabels = $doctorData = [];
-$res = mysqli_query($conn, "
-    SELECT d.name, SUM(a.duration_minutes) AS total_minutes
-    FROM doctor d
-    LEFT JOIN appointment a ON d.doctor_id = a.doctor_id
-    GROUP BY d.doctor_id
-");
-while ($row = mysqli_fetch_assoc($res)) {
-    $doctorLabels[] = $row['name'];
-    $doctorData[] = $row['total_minutes'] ?? 0;
-}
-
 $noShowLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 $noShowData = [];
-
 for ($i = 1; $i <= 12; $i++) {
     $res = mysqli_query($conn, "
         SELECT COUNT(*) AS total
@@ -101,6 +39,77 @@ for ($i = 1; $i <= 12; $i++) {
     ");
     $total = mysqli_fetch_assoc($res)['total'];
     $noShowData[] = (int)$total;
+}
+
+// Initial values for dynamic summary cards (will be updated by AJAX)
+// Fetch these initially for "today" as default view if no range is selected.
+$appointmentsToday = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) FROM appointment WHERE DATE(apt_date) = CURDATE()"))[0];
+$completedAppointments = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) FROM appointment WHERE apt_status = 'Completed' AND DATE(apt_date) = CURDATE()"))[0]; // Filter for today
+$missed = mysqli_fetch_array(mysqli_query($conn, "SELECT COUNT(*) AS missed FROM appointment WHERE apt_date = CURDATE() AND apt_status = 'Missed'"))[0]; // Filter for today
+
+// Initial data for charts that are filtered by date range
+$initialVisitTypes = [];
+$res = mysqli_query($conn, "SELECT visit_type, COUNT(*) as total FROM appointment WHERE DATE(apt_date) = CURDATE() GROUP BY visit_type");
+while ($row = mysqli_fetch_assoc($res)) {
+    $initialVisitTypes[$row['visit_type']] = $row['total'];
+}
+$initialVisitTypesLabels = array_keys($initialVisitTypes);
+$initialVisitTypesData = array_values($initialVisitTypes);
+
+
+$initialDoctorNames = [];
+$initialDoctorCounts = [];
+$res = mysqli_query($conn, "
+    SELECT d.name, COUNT(a.apt_id) AS total
+    FROM doctor d
+    LEFT JOIN appointment a ON a.doctor_id = d.doctor_id
+    WHERE DATE(a.apt_date) = CURDATE()
+    GROUP BY d.doctor_id
+    ORDER BY total DESC
+    LIMIT 5
+");
+while ($row = mysqli_fetch_assoc($res)) {
+    $initialDoctorNames[] = $row['name'];
+    $initialDoctorCounts[] = $row['total'];
+}
+
+$initialWaitLabels = $initialWaitData = [];
+$res = mysqli_query($conn, "
+    SELECT visit_type, AVG(TIMESTAMPDIFF(MINUTE, validated_datetime, CONCAT(apt_date, ' ', apt_time))) AS avg_wait
+    FROM appointment
+    WHERE validated_datetime IS NOT NULL AND apt_time IS NOT NULL AND DATE(apt_date) = CURDATE()
+    GROUP BY visit_type
+");
+while ($row = mysqli_fetch_assoc($res)) {
+    $initialWaitLabels[] = $row['visit_type'];
+    $initialWaitData[] = round($row['avg_wait'], 1);
+}
+
+$initialUtilLabels = $initialUtilData = [];
+$res = mysqli_query($conn, "
+    SELECT d.name, SUM(a.duration_minutes) AS total_minutes
+    FROM doctor d
+    LEFT JOIN appointment a ON d.doctor_id = a.doctor_id
+    WHERE DATE(a.apt_date) = CURDATE()
+    GROUP BY d.doctor_id
+");
+while ($row = mysqli_fetch_assoc($res)) {
+    $initialUtilLabels[] = $row['name'];
+    // Assuming 8 hours workday = 480 minutes
+    $initialUtilData[] = round((($row['total_minutes'] ?? 0) / 480) * 100, 1);
+}
+
+$initialDoctorLabels = $initialDoctorData = [];
+$res = mysqli_query($conn, "
+    SELECT d.name, SUM(a.duration_minutes) AS total_minutes
+    FROM doctor d
+    LEFT JOIN appointment a ON d.doctor_id = a.doctor_id
+    WHERE DATE(a.apt_date) = CURDATE()
+    GROUP BY d.doctor_id
+");
+while ($row = mysqli_fetch_assoc($res)) {
+    $initialDoctorLabels[] = $row['name'];
+    $initialDoctorData[] = $row['total_minutes'] ?? 0;
 }
 
 // Get current date for the input field default value
@@ -394,7 +403,7 @@ $currentDate = date('Y-m-d');
             <div class="card summary-card">
                 <div class="card-body">
                     <h5>Patients</h5>
-                    <h3><?= $patients ?></h3>
+                    <h3 id="patientsCount"><?= $patients ?></h3>
                 </div>
             </div>
         </div>
@@ -402,7 +411,7 @@ $currentDate = date('Y-m-d');
             <div class="card summary-card">
                 <div class="card-body">
                     <h5>Doctors</h5>
-                    <h3><?= $doctors ?></h3>
+                    <h3 id="doctorsCount"><?= $doctors ?></h3>
                 </div>
             </div>
         </div>
@@ -410,7 +419,7 @@ $currentDate = date('Y-m-d');
             <div class="card summary-card">
                 <div class="card-body">
                     <h5>Today's Appointments</h5>
-                    <h3><?= $appointmentsToday ?></h3>
+                    <h3 id="appointmentsTodayCount"><?= $appointmentsToday ?></h3>
                 </div>
             </div>
         </div>
@@ -418,7 +427,7 @@ $currentDate = date('Y-m-d');
             <div class="card summary-card">
                 <div class="card-body">
                     <h5>Completed</h5>
-                    <h3><?= $completedAppointments ?></h3>
+                    <h3 id="completedAppointmentsCount"><?= $completedAppointments ?></h3>
                 </div>
             </div>
         </div>
@@ -426,7 +435,7 @@ $currentDate = date('Y-m-d');
             <div class="card summary-card">
                 <div class="card-body">
                     <h5>Staff</h5>
-                    <h3><?= $staff ?></h3>
+                    <h3 id="staffCount"><?= $staff ?></h3>
                 </div>
             </div>
         </div>
@@ -434,7 +443,7 @@ $currentDate = date('Y-m-d');
             <div class="card summary-card">
                 <div class="card-body">
                     <h5>Room</h5>
-                    <h3><?= $room ?></h3>
+                    <h3 id="roomCount"><?= $room ?></h3>
                 </div>
             </div>
         </div>
@@ -442,7 +451,7 @@ $currentDate = date('Y-m-d');
             <div class="card summary-card">
                 <div class="card-body">
                     <h5>Missed Appointment</h5>
-                    <h3><?= $missed ?></h3>
+                    <h3 id="missedAppointmentsCount"><?= $missed ?></h3>
                 </div>
             </div>
         </div>
@@ -532,8 +541,8 @@ $currentDate = date('Y-m-d');
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const startDateInput = document.getElementById('startDate'); // Corrected ID
-        const endDateInput = document.getElementById('endDate');     // Corrected ID
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
         const filterButtons = document.querySelectorAll('.filter-btn');
 
         // Set default values for date inputs to current date
@@ -542,67 +551,56 @@ $currentDate = date('Y-m-d');
         startDateInput.value = formatDate(today);
         endDateInput.value = formatDate(today);
 
-        let currentFilterType = 'custom'; // Default filter type
+        // Function to set the active filter button
+        function setActiveFilterButton(filterType) {
+            filterButtons.forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+                if (btn.dataset.filter === filterType) {
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-primary');
+                }
+            });
+        }
 
-        // Initial data fetch on page load using default dates
-        fetchData(startDateInput.value, endDateInput.value, currentFilterType);
+        // Initially set 'Day' as active
+        setActiveFilterButton('day');
+
+        // Initial data fetch on page load using default dates (today)
+        fetchData(startDateInput.value, endDateInput.value);
 
         // Event listeners for date input changes
         startDateInput.addEventListener('change', function() {
-            // When a date input changes, reset filter type to custom
-            currentFilterType = 'custom';
-            // Remove active class from filter buttons
-            filterButtons.forEach(btn => {
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-outline-primary');
-            });
-            applyDateRange(); // Re-apply date range
+            setActiveFilterButton('custom'); // Mark as custom when dates are changed manually
+            applyDateRange();
         });
 
         endDateInput.addEventListener('change', function() {
-            // When a date input changes, reset filter type to custom
-            currentFilterType = 'custom';
-            // Remove active class from filter buttons
-            filterButtons.forEach(btn => {
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-outline-primary');
-            });
-            applyDateRange(); // Re-apply date range
+            setActiveFilterButton('custom'); // Mark as custom when dates are changed manually
+            applyDateRange();
         });
 
         // Event listeners for filter buttons
         filterButtons.forEach(button => {
             button.addEventListener('click', function() {
-                // Update active class
-                filterButtons.forEach(btn => {
-                    btn.classList.remove('btn-primary');
-                    btn.classList.add('btn-outline-primary');
-                });
-                this.classList.remove('btn-outline-primary');
-                this.classList.add('btn-primary');
+                setActiveFilterButton(this.dataset.filter);
 
-                currentFilterType = this.dataset.filter; // Update current filter (day, week, month)
-
-                // Adjust date inputs based on selected filter
                 const today = new Date();
                 let startDate = new Date(today);
                 let endDate = new Date(today);
 
-                if (currentFilterType === 'day') {
+                if (this.dataset.filter === 'day') {
                     // Already set to today
-                } else if (currentFilterType === 'week') {
+                } else if (this.dataset.filter === 'week') {
                     startDate.setDate(today.getDate() - 6);
-                } else if (currentFilterType === 'month') {
-                    startDate.setDate(1); // Set to the first day of the current month
+                } else if (this.dataset.filter === 'month') {
+                    startDate.setDate(1); // First day of current month
                 }
-                // For a "month" filter, it's often more intuitive to show data for the *current* month
-                // If the user meant "last 30 days" for month, the initial logic was fine,
-                // but "month" usually implies calendar month. I'll stick to calendar month.
 
                 startDateInput.value = formatDate(startDate);
                 endDateInput.value = formatDate(endDate);
 
-                fetchData(startDateInput.value, endDateInput.value, currentFilterType); // Fetch data with new filter
+                fetchData(startDateInput.value, endDateInput.value, this.dataset.filter);
             });
         });
 
@@ -610,20 +608,15 @@ $currentDate = date('Y-m-d');
         window.applyDateRange = function() {
             const start = startDateInput.value;
             const end = endDateInput.value;
-            currentFilterType = 'custom'; // Ensure filter type is custom
-            // Remove active class from filter buttons when applying custom date range
-            filterButtons.forEach(btn => {
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-outline-primary');
-            });
+            setActiveFilterButton('custom'); // Ensure custom button is not active if manual date is selected
             if (start && end) {
-                fetchData(start, end, currentFilterType);
+                fetchData(start, end, 'custom');
             }
         }
 
 
         // Function to fetch data via AJAX and update dashboard elements
-        function fetchData(startDate, endDate, filterType) {
+        function fetchData(startDate, endDate, filterType = 'custom') {
             $.ajax({
                 url: 'report_ajax.php',
                 method: 'POST',
@@ -634,24 +627,22 @@ $currentDate = date('Y-m-d');
                 },
                 dataType: 'json',
                 success: function (data) {
-                    // Update summary cards
-                    $('#patientsCount').text(data.patients); // Assuming you add IDs to summary card h3s
-                    $('#doctorsCount').text(data.doctors);
+                    // Update summary cards that depend on date range
                     $('#appointmentsTodayCount').text(data.appointmentsToday);
                     $('#completedAppointmentsCount').text(data.completedAppointments);
-                    $('#staffCount').text(data.staff);
-                    $('#roomCount').text(data.room);
                     $('#missedAppointmentsCount').text(data.missed);
 
-
+                    // Update charts that depend on date range
                     updateChart(window.visitTypeChart, Object.keys(data.visit_types), Object.values(data.visit_types));
-                    updateChart(window.doctorChart, Object.keys(data.doctors), Object.values(data.doctors));
+                    updateChart(window.doctorChart, Object.keys(data.top_doctors_by_appointments), Object.values(data.top_doctors_by_appointments));
                     updateChart(window.waitTimeChart, Object.keys(data.avg_wait_times), Object.values(data.avg_wait_times));
-                    updateChart(window.utilizationChart, Object.keys(data.doctor_utilization), Object.values(data.doctor_utilization));
-                    updateChart(window.doctorUtilizationChart, Object.keys(data.doctor_Utilization_minutes), Object.values(data.doctor_Utilization_minutes)); // Corrected variable name as per PHP for minutes
-                    updateChart(window.monthlyChart, data.monthly_labels, data.monthly_data); // Assuming monthly data also comes from AJAX
-                    updateChart(window.noShowChart, data.no_show_labels, data.no_show_data); // Assuming no-show data also comes from AJAX
+                    updateChart(window.utilizationChart, Object.keys(data.doctor_utilization_percent), Object.values(data.doctor_utilization_percent));
+                    updateChart(window.doctorUtilizationChart, Object.keys(data.doctor_utilization_minutes), Object.values(data.doctor_utilization_minutes));
 
+                    // Monthly Appointments Overview and No-Show Trends remain full year, so their data is NOT updated by this AJAX call
+                    // Instead, they use the initial PHP data which covers the full current year.
+                    // If monthlyChart should also filter, you'd uncomment and adjust this:
+                    updateChart(window.monthlyChart, data.monthly_labels, data.monthly_data); // This line is correct to update it based on report_ajax.php's current year data
                 },
                 error: function (xhr) {
                     console.error("AJAX error:", xhr.responseText);
@@ -667,13 +658,16 @@ $currentDate = date('Y-m-d');
         }
 
         // --- Chart.js Initializations ---
+        // Charts that depend on the date range should be initialized with data for 'today' (default view)
+        // Charts that show full year data (monthly, no-show) are initialized with PHP data for the current year.
+
         window.monthlyChart = new Chart(document.getElementById('monthlyChart'), {
             type: 'line',
             data: {
-                labels: <?= json_encode($monthlyData) ?>, // Initial data from PHP
+                labels: <?= json_encode($monthlyDataLabels) ?>, // Labels are fixed for monthly
                 datasets: [{
                     label: 'Booked',
-                    data: <?= json_encode($monthlyData) ?>, // Initial data from PHP
+                    data: <?= json_encode($monthlyData) ?>, // Initial data from PHP (full current year)
                     borderColor: '#42a5f5',
                     backgroundColor: 'rgba(66, 165, 245, 0.2)',
                     fill: true,
@@ -720,9 +714,9 @@ $currentDate = date('Y-m-d');
         window.visitTypeChart = new Chart(document.getElementById('visitTypeChart'), {
             type: 'doughnut',
             data: {
-                labels: <?= json_encode($visitTypesLabels) ?>,
+                labels: <?= json_encode($initialVisitTypesLabels) ?>,
                 datasets: [{
-                    data: <?= json_encode($visitTypesData) ?>,
+                    data: <?= json_encode($initialVisitTypesData) ?>,
                     backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
                     hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#f0b72a', '#e02d1d'],
                     hoverBorderColor: "rgba(234, 236, 244, 1)",
@@ -758,10 +752,10 @@ $currentDate = date('Y-m-d');
         window.doctorChart = new Chart(document.getElementById('doctorChart'), {
             type: 'bar',
             data: {
-                labels: <?= json_encode($doctorNames) ?>,
+                labels: <?= json_encode($initialDoctorNames) ?>,
                 datasets: [{
                     label: 'Appointments',
-                    data: <?= json_encode($doctorCounts) ?>,
+                    data: <?= json_encode($initialDoctorCounts) ?>,
                     backgroundColor: '#82b1ff',
                     hoverBackgroundColor: '#42a5f5',
                     borderColor: '#64b5f6',
@@ -798,16 +792,11 @@ $currentDate = date('Y-m-d');
             }
         });
 
-        // The monthly chart initialization is already above, moved here to ensure consistency
-        // No need to re-declare it, just ensure it's defined once.
-        // If you intend for this chart to also be updated by AJAX, then its initial labels/data
-        // should also come from the PHP and then be updated via updateChart.
-
         window.waitTimeChart = new Chart(document.getElementById('waitTimeChart'), {
             type: 'bar',
             data: {
-                labels: <?= json_encode($waitLabels) ?>, // Initial data from PHP
-                datasets: [{ label: 'Avg Wait Time', data: <?= json_encode($waitData) ?>, backgroundColor: '#ffcc80' }]
+                labels: <?= json_encode($initialWaitLabels) ?>,
+                datasets: [{ label: 'Avg Wait Time', data: <?= json_encode($initialWaitData) ?>, backgroundColor: '#ffcc80' }]
             },
             options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
@@ -815,8 +804,8 @@ $currentDate = date('Y-m-d');
         window.utilizationChart = new Chart(document.getElementById('utilizationChart'), {
             type: 'bar',
             data: {
-                labels: <?= json_encode($utilLabels) ?>, // Initial data from PHP
-                datasets: [{ label: 'Utilization (%)', data: <?= json_encode($utilData) ?>, backgroundColor: '#81c784' }]
+                labels: <?= json_encode($initialUtilLabels) ?>,
+                datasets: [{ label: 'Utilization (%)', data: <?= json_encode($initialUtilData) ?>, backgroundColor: '#81c784' }]
             },
             options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
         });
@@ -824,10 +813,10 @@ $currentDate = date('Y-m-d');
         window.doctorUtilizationChart = new Chart(document.getElementById('doctorUtilizationChart'), {
             type: 'bar',
             data: {
-                labels: <?= json_encode($doctorLabels) ?>, // Initial data from PHP
+                labels: <?= json_encode($initialDoctorLabels) ?>,
                 datasets: [{
                     label: 'Doctor Utilization (Minutes Served)',
-                    data: <?= json_encode($doctorData) ?>,
+                    data: <?= json_encode($initialDoctorData) ?>,
                     backgroundColor: '#4caf50'
                 }]
             },
@@ -852,10 +841,10 @@ $currentDate = date('Y-m-d');
         window.noShowChart = new Chart(document.getElementById('noShowChart'), {
             type: 'line',
             data: {
-                labels: <?= json_encode($noShowLabels) ?>, // Initial data from PHP
+                labels: <?= json_encode($noShowLabels) ?>,
                 datasets: [{
                     label: 'Missed Appointments',
-                    data: <?= json_encode($noShowData) ?>, // Initial data from PHP
+                    data: <?= json_encode($noShowData) ?>,
                     borderColor: '#ef5350',
                     backgroundColor: 'rgba(239,83,80,0.2)',
                     fill: true,
