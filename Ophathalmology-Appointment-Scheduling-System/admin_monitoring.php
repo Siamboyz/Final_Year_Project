@@ -13,6 +13,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 // Get the current date and time in 'YYYY-MM-DD HH:MM:SS' format.
 $currentTime = date('Y-m-d H:i:s');
+$currentDate = date('Y-m-d');
 
 // SQL query to fetch appointments with specific statuses and join necessary tables.
 // It joins:
@@ -39,7 +40,7 @@ $sql = "SELECT
             room AS r ON d.room_id = r.room_id
         WHERE
             a.apt_status IN ('Now Serving', 'Paused', 'Emergency')
-            AND a.apt_date = '$currentTime'
+            AND a.apt_date = '$currentDate'
         ORDER BY
             a.apt_time";
 
