@@ -39,6 +39,7 @@ $sql = "SELECT
             room AS r ON d.room_id = r.room_id
         WHERE
             a.apt_status IN ('Now Serving', 'Paused', 'Emergency')
+            AND a.apt_date = '$currentTime'
         ORDER BY
             a.apt_time";
 
