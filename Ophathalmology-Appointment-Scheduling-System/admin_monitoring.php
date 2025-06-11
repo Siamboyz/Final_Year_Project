@@ -1,3 +1,4 @@
+```php
 <?php
 session_start();
 // admin_monitoring.php - Real-Time Queue Monitoring for Admin
@@ -83,9 +84,7 @@ mysqli_close($conn);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Real-Time Queue Monitoring</title>
-    <!-- Link to Google Fonts for 'Inter' - a modern, professional font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Link to Font Awesome for professional icons (reintroduced) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* General body styling for a clean, modern look */
@@ -203,6 +202,7 @@ mysqli_close($conn);
             align-items: flex-end;
             min-width: 220px; /* Slightly wider */
             flex-shrink: 0; /* Prevent shrinking on smaller screens */
+            position: relative; /* For positioning the emergency label */
         }
 
         /* Styling for the status text (e.g., "Now Serving") */
@@ -298,6 +298,24 @@ mysqli_close($conn);
             border-color: #c0392b;
         }
 
+        .emergency-label {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #e74c3c;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 3;
+            transform: translateY(-100%); /* Position above the status visualizer */
+            margin-right: -10px; /* Adjust as needed for alignment */
+        }
+
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .main-container {
@@ -337,26 +355,29 @@ mysqli_close($conn);
             .status-text {
                 align-self: flex-start; /* Ensure text aligns left above bar */
             }
+            .emergency-label {
+                right: unset;
+                left: 0;
+                transform: translateY(-100%);
+                margin-right: 0;
+                margin-left: -10px;
+            }
         }
     </style>
 </head>
 <body>
-<!-- Include the header for the admin section -->
 <?php include 'header_admin.php'; ?>
 
 <div class="main-container">
     <h1>📍 Admin | Real-Time Queue Monitoring</h1>
-    <!-- Include the breadcrumb navigation -->
     <?php include 'breadcrumb.php'; ?>
     <br>
     <section class="queue-section">
         <div class="queue-container">
             <?php if (empty($queueData)) { ?>
-                <!-- Message if no patients are in the queue, styled professionally -->
                 <p style="text-align: center; color: #7f8c8d; padding: 20px; border: 1px dashed #dbe3eb; border-radius: 8px;">No patients in the queue at the moment.</p>
             <?php } else { ?>
                 <?php foreach ($queueData as $data) { ?>
-                    <!-- Loop through each patient in the queue -->
                     <div class="queue-card <?= strtolower(str_replace(' ', '-', $data['status'])) ?>">
                         <div class="patient-info">
                             <h4>Room: <?= htmlspecialchars($data['room']) ?></h4>
@@ -365,13 +386,13 @@ mysqli_close($conn);
                             <p><strong>Appointment Time:</strong> <?= date('h:i A', strtotime($data['start_time'])) ?></p>
                         </div>
 
-                        <!-- Redesigned Progress / Status Indicator for professional look -->
                         <div class="status-visualizer">
+                            <?php if ($data['status'] == 'Emergency') { ?>
+                                <span class="emergency-label">Emergency</span>
+                            <?php } ?>
                             <span class="status-text"><?= htmlspecialchars($data['status']) ?></span>
                             <div class="status-progress-bar">
-                                <!-- The colored fill of the progress bar, dynamic width and color based on status -->
                                 <div class="progress-fill <?= strtolower(str_replace(' ', '-', $data['status'])) ?>">
-                                    <!-- The circular thumb with an icon -->
                                     <div class="progress-thumb">
                                         <?php
                                         // Conditional rendering of icons based on status
