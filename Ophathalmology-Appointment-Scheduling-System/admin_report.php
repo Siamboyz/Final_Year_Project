@@ -87,17 +87,20 @@ while ($row = mysqli_fetch_assoc($res)) {
     $doctorData[] = $row['total_minutes'] ?? 0;
 }
 
-$noShowLabels = $noShowData = [];
-$res = mysqli_query($conn, "
-    SELECT apt_date, COUNT(*) as total_missed
-    FROM appointment
-    WHERE apt_status = 'Missed' AND apt_date >= CURDATE() - INTERVAL 30 DAY
-    GROUP BY apt_date
-    ORDER BY apt_date
-");
-while ($row = mysqli_fetch_assoc($res)) {
-    $noShowLabels[] = $row['apt_date'];
-    $noShowData[] = $row['total_missed'];
+$noShowLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+$noShowData = [];
+
+for ($i = 1; $i <= 12; $i++) {
+    $res = mysqli_query($conn, "
+        SELECT COUNT(*) AS total
+        FROM appointment
+        WHERE apt_status = 'Missed'
+        AND was_missed = 1
+        AND MONTH(apt_date) = $i
+        AND YEAR(apt_date) = YEAR(CURDATE())
+    ");
+    $total = mysqli_fetch_assoc($res)['total'];
+    $noShowData[] = (int)$total;
 }
 
 // Get current date for the input field default value
@@ -113,244 +116,244 @@ $currentDate = date('Y-m-d');
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f9f9f9;
-        color: #333;
-        margin: 0;
-        padding: 20px;
-    }
-
-    .main-container {
-        background-color: white;
-        padding: 10px 30px;
-        display: flex;
-        flex-direction: column;
-        text-align: justify;
-        margin-left: calc(100% - 80%);
-        max-width: 100%; /* Limits the content width */
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-        font-size: 1.8rem;
-        color: #0275d8;
-        margin-bottom: 10px; /* Adjusted margin */
-        border-bottom: 1px solid #ecf0f1; /* Subtle separator */
-        padding-bottom: 15px;
-        padding-top: 15px;
-        font-weight: bold;
-    }
-
-    .card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease-in-out;
-        background-color: #fff;
-    }
-
-    .card:hover {
-        transform: scale(1.01);
-    }
-
-    .card-body {
-        padding: 20px;
-    }
-
-    .summary-card h5 {
-        font-size: 0.9rem;
-        color: #666;
-        margin-bottom: 5px;
-        font-weight: 500;
-    }
-
-    .summary-card h3 {
-        font-size: 1.5rem;
-        color: #2a2f45;
-        font-weight: 700;
-    }
-
-    .chart-container {
-        height: 280px;
-    }
-
-    .section-title {
-        font-size: 1.15rem;
-        font-weight: 600;
-        margin-bottom: 15px;
-        color: #333;
-    }
-
-    /* Breadcrumb styling for right alignment */
-    .breadcrumb-container {
-        display: flex;
-        justify-content: flex-end;
-        width: 100%;
-        margin-bottom: 20px;
-    }
-
-    .breadcrumb {
-        font-size: 14px;
-        color: #666;
-    }
-
-    /* Date Selection Card - New layout with filters and date input on one line */
-    .date-selection-card {
-        margin-bottom: 25px;
-    }
-
-
-    .date-selection-card .card-body.filter-date-line {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center !important; /* force override */
-        align-items: center;
-        text-align: center;
-        padding: 15px 20px;
-        gap: 15px;
-    }
-
-    .full-inline-group {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: nowrap; /* forces all to stay in one line */
-    gap: 12px;
-    }
-
-    .full-inline-group .form-control,
-    .full-inline-group .btn,
-    .full-inline-group .btn-group {
-        white-space: nowrap;
-        flex-shrink: 0;
-    }
-
-    @media (max-width: 991.98px) {
-        .full-inline-group {
-            flex-wrap: wrap; /* allow stacking on mobile */
-            justify-content: flex-start;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
         }
 
-        .full-inline-group .btn-group {
-            width: 100%;
-            justify-content: start;
-        }
-    }
-
-
-    .date-selection-card .section-title {
-        margin-bottom: 0;
-        margin-right: auto;
-        text-align: left;
-    }
-
-    /* Date input styling */
-    .date-input-group {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .date-selection-card input[type="date"] {
-        padding: 10px 15px;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        font-size: 1rem;
-        color: #333;
-        width: 100%;
-        max-width: 150px;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-        transition: border-color 0.2s ease-in-out;
-    }
-
-    .date-selection-card input[type="date"]:focus {
-        border-color: #0d6efd;
-        outline: none;
-        box-shadow: 0 0 0 0.25rem rgba(13,110,253,0.25);
-    }
-
-    .input-icon {
-        position: absolute;
-        right: 10px;
-        pointer-events: none;
-        color: #666;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-
-    /* Button group & buttons styling */
-    .btn-group {
-        display: flex;
-    }
-
-    .btn-group .btn {
-        min-width: 80px;       /* consistent button width */
-        padding-left: 1rem;
-        padding-right: 1rem;
-        font-weight: 500;
-        font-size: 1rem;
-        height: 38px;          /* consistent button height */
-        border-radius: 5px;    /* optional: subtle rounding */
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 991.98px) {
         .main-container {
-            padding: 15px;
+            background-color: white;
+            padding: 10px 30px;
+            display: flex;
+            flex-direction: column;
+            text-align: justify;
+            margin-left: calc(100% - 80%);
+            max-width: 100%; /* Limits the content width */
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        .date-selection-card {
+
+        h1 {
+            font-size: 1.8rem;
+            color: #0275d8;
+            margin-bottom: 10px; /* Adjusted margin */
+            border-bottom: 1px solid #ecf0f1; /* Subtle separator */
+            padding-bottom: 15px;
+            padding-top: 15px;
+            font-weight: bold;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease-in-out;
+            background-color: #fff;
+        }
+
+        .card:hover {
+            transform: scale(1.01);
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .summary-card h5 {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .summary-card h3 {
+            font-size: 1.5rem;
+            color: #2a2f45;
+            font-weight: 700;
+        }
+
+        .chart-container {
+            height: 280px;
+        }
+
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        /* Breadcrumb styling for right alignment */
+        .breadcrumb-container {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
             margin-bottom: 20px;
         }
-        .row.g-3 {
-            --bs-gutter-x: 1rem;
-            --bs-gutter-y: 1rem;
-        }
-        .summary-card {
-            margin-bottom: 15px;
-        }
-    }
 
-    @media (max-width: 767.98px) {
-        h1 {
-            font-size: 1.5rem;
+        .breadcrumb {
+            font-size: 14px;
+            color: #666;
         }
-        .section-title {
-            font-size: 1rem;
+
+        /* Date Selection Card - New layout with filters and date input on one line */
+        .date-selection-card {
+            margin-bottom: 25px;
         }
-        .card-body {
-            padding: 15px;
-        }
-        .chart-container {
-            height: 250px;
-        }
+
+
         .date-selection-card .card-body.filter-date-line {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center !important; /* force override */
+            align-items: center;
+            text-align: center;
+            padding: 15px 20px;
+            gap: 15px;
         }
+
+        .full-inline-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap; /* forces all to stay in one line */
+            gap: 12px;
+        }
+
+        .full-inline-group .form-control,
+        .full-inline-group .btn,
+        .full-inline-group .btn-group {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 991.98px) {
+            .full-inline-group {
+                flex-wrap: wrap; /* allow stacking on mobile */
+                justify-content: flex-start;
+            }
+
+            .full-inline-group .btn-group {
+                width: 100%;
+                justify-content: start;
+            }
+        }
+
+
         .date-selection-card .section-title {
-            width: 100%;
+            margin-bottom: 0;
+            margin-right: auto;
             text-align: left;
-            margin-right: 0;
-            margin-bottom: 5px;
         }
-        .btn-group {
-            width: 100%;
-            justify-content: flex-start;
-        }
+
+        /* Date input styling */
         .date-input-group {
-            width: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
         }
+
         .date-selection-card input[type="date"] {
-            max-width: unset;
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #333;
             width: 100%;
-            font-size: 0.9rem;
-            padding: 8px 12px;
+            max-width: 150px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            transition: border-color 0.2s ease-in-out;
         }
-    }
-</style>
+
+        .date-selection-card input[type="date"]:focus {
+            border-color: #0d6efd;
+            outline: none;
+            box-shadow: 0 0 0 0.25rem rgba(13,110,253,0.25);
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 10px;
+            pointer-events: none;
+            color: #666;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Button group & buttons styling */
+        .btn-group {
+            display: flex;
+        }
+
+        .btn-group .btn {
+            min-width: 80px;       /* consistent button width */
+            padding-left: 1rem;
+            padding-right: 1rem;
+            font-weight: 500;
+            font-size: 1rem;
+            height: 38px;          /* consistent button height */
+            border-radius: 5px;    /* optional: subtle rounding */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 991.98px) {
+            .main-container {
+                padding: 15px;
+            }
+            .date-selection-card {
+                margin-bottom: 20px;
+            }
+            .row.g-3 {
+                --bs-gutter-x: 1rem;
+                --bs-gutter-y: 1rem;
+            }
+            .summary-card {
+                margin-bottom: 15px;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            .section-title {
+                font-size: 1rem;
+            }
+            .card-body {
+                padding: 15px;
+            }
+            .chart-container {
+                height: 250px;
+            }
+            .date-selection-card .card-body.filter-date-line {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .date-selection-card .section-title {
+                width: 100%;
+                text-align: left;
+                margin-right: 0;
+                margin-bottom: 5px;
+            }
+            .btn-group {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            .date-input-group {
+                width: 100%;
+            }
+            .date-selection-card input[type="date"] {
+                max-width: unset;
+                width: 100%;
+                font-size: 0.9rem;
+                padding: 8px 12px;
+            }
+        }
+    </style>
 </head>
 <body>
 <?php include 'header_admin.php'; ?>
@@ -378,9 +381,9 @@ $currentDate = date('Y-m-d');
             <button class="btn btn-primary me-3" onclick="applyDateRange()">Apply</button>
 
             <div class="btn-group filter-toggle" role="group">
-            <button type="button" class="btn btn-outline-primary filter-btn" data-filter="day">Day</button>
-            <button type="button" class="btn btn-outline-primary filter-btn" data-filter="week">Week</button>
-            <button type="button" class="btn btn-outline-primary filter-btn" data-filter="month">Month</button>
+                <button type="button" class="btn btn-outline-primary filter-btn" data-filter="day">Day</button>
+                <button type="button" class="btn btn-outline-primary filter-btn" data-filter="week">Week</button>
+                <button type="button" class="btn btn-outline-primary filter-btn" data-filter="month">Month</button>
             </div>
         </div>
     </div>
@@ -518,7 +521,7 @@ $currentDate = date('Y-m-d');
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="section-title">📉 No-Show Trends (Last 30 Days)</h5>
+                    <h5 class="section-title">📉 No-Show Trends (Monthly Missed Appointments)</h5>
                     <div class="chart-container">
                         <canvas id="noShowChart"></canvas>
                     </div>
@@ -528,329 +531,375 @@ $currentDate = date('Y-m-d');
     </div>
 </div>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const dateInput = document.getElementById('dateInput');
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    let currentFilter = 'month'; // Default filter set to month
-    let currentDate = 'day';
+    document.addEventListener('DOMContentLoaded', function () {
+        const startDateInput = document.getElementById('startDate'); // Corrected ID
+        const endDateInput = document.getElementById('endDate');     // Corrected ID
+        const filterButtons = document.querySelectorAll('.filter-btn');
 
-    // Fetch initial data for default filter on page load
-    fetchDataForDateAndFilter(dateInput.value, currentFilter);
+        // Set default values for date inputs to current date
+        const today = new Date();
+        const formatDate = d => d.toISOString().split('T')[0];
+        startDateInput.value = formatDate(today);
+        endDateInput.value = formatDate(today);
 
-    // Event listener for date input change
-    dateInput.addEventListener('change', function() {
-        fetchDataForDateAndFilter(this.value, currentDate);
-    });
+        let currentFilterType = 'custom'; // Default filter type
 
-    // Event listeners for filter buttons
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            // Update active class
+        // Initial data fetch on page load using default dates
+        fetchData(startDateInput.value, endDateInput.value, currentFilterType);
+
+        // Event listeners for date input changes
+        startDateInput.addEventListener('change', function() {
+            // When a date input changes, reset filter type to custom
+            currentFilterType = 'custom';
+            // Remove active class from filter buttons
             filterButtons.forEach(btn => {
                 btn.classList.remove('btn-primary');
                 btn.classList.add('btn-outline-primary');
             });
-            this.classList.remove('btn-outline-primary');
-            this.classList.add('btn-primary');
-
-            currentFilter = this.dataset.filter; // Update current filter (day, week, month)
-            fetchDataForDateAndFilter(dateInput.value, currentFilter); // Fetch data with new filter
+            applyDateRange(); // Re-apply date range
         });
-    });
 
-    // Function to update the active button's style
-    function updateActiveFilterButton() {
+        endDateInput.addEventListener('change', function() {
+            // When a date input changes, reset filter type to custom
+            currentFilterType = 'custom';
+            // Remove active class from filter buttons
+            filterButtons.forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+            });
+            applyDateRange(); // Re-apply date range
+        });
+
+        // Event listeners for filter buttons
         filterButtons.forEach(button => {
-            if (button.dataset.filter === currentFilter) {
-                button.classList.remove('btn-outline-primary');
-                button.classList.add('btn-primary');
-            } else {
-                button.classList.add('btn-outline-primary');
+            button.addEventListener('click', function() {
+                // Update active class
+                filterButtons.forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-primary');
+
+                currentFilterType = this.dataset.filter; // Update current filter (day, week, month)
+
+                // Adjust date inputs based on selected filter
+                const today = new Date();
+                let startDate = new Date(today);
+                let endDate = new Date(today);
+
+                if (currentFilterType === 'day') {
+                    // Already set to today
+                } else if (currentFilterType === 'week') {
+                    startDate.setDate(today.getDate() - 6);
+                } else if (currentFilterType === 'month') {
+                    startDate.setDate(1); // Set to the first day of the current month
+                }
+                // For a "month" filter, it's often more intuitive to show data for the *current* month
+                // If the user meant "last 30 days" for month, the initial logic was fine,
+                // but "month" usually implies calendar month. I'll stick to calendar month.
+
+                startDateInput.value = formatDate(startDate);
+                endDateInput.value = formatDate(endDate);
+
+                fetchData(startDateInput.value, endDateInput.value, currentFilterType); // Fetch data with new filter
+            });
+        });
+
+        // Function to apply manual date range from input fields
+        window.applyDateRange = function() {
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+            currentFilterType = 'custom'; // Ensure filter type is custom
+            // Remove active class from filter buttons when applying custom date range
+            filterButtons.forEach(btn => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-primary');
+            });
+            if (start && end) {
+                fetchData(start, end, currentFilterType);
+            }
+        }
+
+
+        // Function to fetch data via AJAX and update dashboard elements
+        function fetchData(startDate, endDate, filterType) {
+            $.ajax({
+                url: 'report_ajax.php',
+                method: 'POST',
+                data: {
+                    start_date: startDate,
+                    end_date: endDate,
+                    filter_type: filterType
+                },
+                dataType: 'json',
+                success: function (data) {
+                    // Update summary cards
+                    $('#patientsCount').text(data.patients); // Assuming you add IDs to summary card h3s
+                    $('#doctorsCount').text(data.doctors);
+                    $('#appointmentsTodayCount').text(data.appointmentsToday);
+                    $('#completedAppointmentsCount').text(data.completedAppointments);
+                    $('#staffCount').text(data.staff);
+                    $('#roomCount').text(data.room);
+                    $('#missedAppointmentsCount').text(data.missed);
+
+
+                    updateChart(window.visitTypeChart, Object.keys(data.visit_types), Object.values(data.visit_types));
+                    updateChart(window.doctorChart, Object.keys(data.doctors), Object.values(data.doctors));
+                    updateChart(window.waitTimeChart, Object.keys(data.avg_wait_times), Object.values(data.avg_wait_times));
+                    updateChart(window.utilizationChart, Object.keys(data.doctor_utilization), Object.values(data.doctor_utilization));
+                    updateChart(window.doctorUtilizationChart, Object.keys(data.doctor_Utilization_minutes), Object.values(data.doctor_Utilization_minutes)); // Corrected variable name as per PHP for minutes
+                    updateChart(window.monthlyChart, data.monthly_labels, data.monthly_data); // Assuming monthly data also comes from AJAX
+                    updateChart(window.noShowChart, data.no_show_labels, data.no_show_data); // Assuming no-show data also comes from AJAX
+
+                },
+                error: function (xhr) {
+                    console.error("AJAX error:", xhr.responseText);
+                }
+            });
+        }
+
+        // Helper function to update Chart.js instances
+        function updateChart(chart, labels, data) {
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = data;
+            chart.update();
+        }
+
+        // --- Chart.js Initializations ---
+        window.monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+            type: 'line',
+            data: {
+                labels: <?= json_encode($monthlyData) ?>, // Initial data from PHP
+                datasets: [{
+                    label: 'Booked',
+                    data: <?= json_encode($monthlyData) ?>, // Initial data from PHP
+                    borderColor: '#42a5f5',
+                    backgroundColor: 'rgba(66, 165, 245, 0.2)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#42a5f5',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#42a5f5',
+                    pointHoverBorderColor: '#fff',
+                    pointHitRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 10,
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "rgba(0, 0, 0, 0.05)" },
+                        ticks: { font: { size: 10 } }
+                    }
+                }
             }
         });
-    }
 
-});
-
-// Function to fetch data via AJAX and update dashboard elements
-let currentFilterType = 'custom'; // default to manual date range
-
-function applyDateRange() {
-    const start = document.getElementById('startDate').value;
-    const end = document.getElementById('endDate').value;
-    currentFilterType = 'custom';
-    if (start && end) {
-        fetchData(start, end, currentFilterType);
-    }
-}
-
-document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', function () {
-        // Reset all buttons
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-
-        // Set this one as active
-        this.classList.add('active');
-
-        const filter = this.dataset.filter;
-        currentFilterType = filter;
-
-        const today = new Date();
-        let startDate = new Date(today);
-        let endDate = new Date(today);
-
-        if (filter === 'week') {
-            startDate.setDate(today.getDate() - 6);
-        } else if (filter === 'month') {
-            startDate.setMonth(today.getMonth() - 1);
-        }
-
-        const formatDate = d => d.toISOString().split('T')[0];
-        fetchData(formatDate(startDate), formatDate(endDate), filter);
-    });
-});
-
-
-function fetchData(startDate, endDate, filterType) {
-    $.ajax({
-        url: 'report_ajax.php',
-        method: 'POST',
-        data: {
-            start_date: startDate,
-            end_date: endDate,
-            filter_type: filterType
-        },
-        dataType: 'json',
-        success: function (data) {
-            updateChart(window.visitTypeChart, Object.keys(data.visit_types), Object.values(data.visit_types));
-            updateChart(window.doctorChart, Object.keys(data.doctors), Object.values(data.doctors));
-            updateChart(window.waitTimeChart, Object.keys(data.avg_wait_times), Object.values(data.avg_wait_times));
-            updateChart(window.utilizationChart, Object.keys(data.doctor_utilization), Object.values(data.doctor_utilization));
-            updateChart(window.doctorUtilizationChart, Object.keys(data.doctor_Utilization), Object.values(data.doctor_Utilization));
-            updateChart(window.noShowChart, Object.keys(data.no_show_trends), Object.values(data.no_show_trends));
-        },
-        error: function (xhr) {
-            console.error("AJAX error:", xhr.responseText);
-        }
-    });
-}
-
-// Helper function to update Chart.js instances
-function updateChart(chart, labels, data) {
-    chart.data.labels = labels;
-    chart.data.datasets[0].data = data;
-    chart.update();
-}
-
-// --- Chart.js Initializations ---
-window.visitTypeChart = new Chart(document.getElementById('visitTypeChart'), {
-    type: 'doughnut',
-    data: {
-        labels: <?= json_encode($visitTypesLabels) ?>,
-        datasets: [{
-            data: <?= json_encode($visitTypesData) ?>,
-            backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
-            hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#f0b72a', '#e02d1d'],
-            hoverBorderColor: "rgba(234, 236, 244, 1)",
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'right',
-                labels: {
-                    boxWidth: 10,
-                    padding: 15,
-                    font: { size: 11 }
-                }
+        window.visitTypeChart = new Chart(document.getElementById('visitTypeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: <?= json_encode($visitTypesLabels) ?>,
+                datasets: [{
+                    data: <?= json_encode($visitTypesData) ?>,
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
+                    hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#f0b72a', '#e02d1d'],
+                    hoverBorderColor: "rgba(234, 236, 244, 1)",
+                }]
             },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        let label = context.label || '';
-                        if (label) label += ': ';
-                        if (context.parsed !== null) label += context.parsed;
-                        return label;
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 10,
+                            padding: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed !== null) label += context.parsed;
+                                return label;
+                            }
+                        }
+                    }
+                },
+                cutout: '70%',
+            }
+        });
+
+        window.doctorChart = new Chart(document.getElementById('doctorChart'), {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($doctorNames) ?>,
+                datasets: [{
+                    label: 'Appointments',
+                    data: <?= json_encode($doctorCounts) ?>,
+                    backgroundColor: '#82b1ff',
+                    hoverBackgroundColor: '#42a5f5',
+                    borderColor: '#64b5f6',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) label += context.parsed.y;
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "rgba(0, 0, 0, 0.05)" },
+                        ticks: { font: { size: 10 } }
                     }
                 }
             }
-        },
-        cutout: '70%',
-    }
-});
+        });
 
-window.doctorChart = new Chart(document.getElementById('doctorChart'), {
-    type: 'bar',
-    data: {
-        labels: <?= json_encode($doctorNames) ?>,
-        datasets: [{
-            label: 'Appointments',
-            data: <?= json_encode($doctorCounts) ?>,
-            backgroundColor: '#82b1ff',
-            hoverBackgroundColor: '#42a5f5',
-            borderColor: '#64b5f6',
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        let label = context.dataset.label || '';
-                        if (label) label += ': ';
-                        if (context.parsed.y !== null) label += context.parsed.y;
-                        return label;
+        // The monthly chart initialization is already above, moved here to ensure consistency
+        // No need to re-declare it, just ensure it's defined once.
+        // If you intend for this chart to also be updated by AJAX, then its initial labels/data
+        // should also come from the PHP and then be updated via updateChart.
+
+        window.waitTimeChart = new Chart(document.getElementById('waitTimeChart'), {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($waitLabels) ?>, // Initial data from PHP
+                datasets: [{ label: 'Avg Wait Time', data: <?= json_encode($waitData) ?>, backgroundColor: '#ffcc80' }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        window.utilizationChart = new Chart(document.getElementById('utilizationChart'), {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($utilLabels) ?>, // Initial data from PHP
+                datasets: [{ label: 'Utilization (%)', data: <?= json_encode($utilData) ?>, backgroundColor: '#81c784' }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+
+        window.doctorUtilizationChart = new Chart(document.getElementById('doctorUtilizationChart'), {
+            type: 'bar',
+            data: {
+                labels: <?= json_encode($doctorLabels) ?>, // Initial data from PHP
+                datasets: [{
+                    label: 'Doctor Utilization (Minutes Served)',
+                    data: <?= json_encode($doctorData) ?>,
+                    backgroundColor: '#4caf50'
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Doctor Utilization Summary'
+                    },
+                    legend: {
+                        display: false
                     }
                 }
             }
-        },
-        scales: {
-            x: {
-                grid: { display: false },
-                ticks: { font: { size: 10 } }
-            },
-            y: {
-                beginAtZero: true,
-                grid: { color: "rgba(0, 0, 0, 0.05)" },
-                ticks: { font: { size: 10 } }
-            }
-        }
-    }
-});
+        });
 
-new Chart(document.getElementById('monthlyChart'), {
-    type: 'line',
-    data: {
-        labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-        datasets: [{
-            label: 'Booked',
-            data: <?= json_encode($monthlyData) ?>,
-            borderColor: '#42a5f5',
-            backgroundColor: 'rgba(66, 165, 245, 0.2)',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 3,
-            pointBackgroundColor: '#42a5f5',
-            pointBorderColor: '#fff',
-            pointHoverRadius: 5,
-            pointHoverBackgroundColor: '#42a5f5',
-            pointHoverBorderColor: '#fff',
-            pointHitRadius: 10
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top',
-                labels: {
-                    boxWidth: 10,
-                    padding: 20
+        window.noShowChart = new Chart(document.getElementById('noShowChart'), {
+            type: 'line',
+            data: {
+                labels: <?= json_encode($noShowLabels) ?>, // Initial data from PHP
+                datasets: [{
+                    label: 'Missed Appointments',
+                    data: <?= json_encode($noShowData) ?>, // Initial data from PHP
+                    borderColor: '#ef5350',
+                    backgroundColor: 'rgba(239,83,80,0.2)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#ef5350',
+                    pointBorderColor: '#fff',
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#ef5350',
+                    pointHoverBorderColor: '#fff',
+                    pointHitRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 10,
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "rgba(0, 0, 0, 0.05)" },
+                        ticks: { font: { size: 10 } }
+                    }
                 }
-            },
-            tooltip: {
-                mode: 'index',
-                intersect: false,
             }
-        },
-        scales: {
-            x: {
-                grid: { display: false },
-                ticks: { font: { size: 10 } }
-            },
-            y: {
-                beginAtZero: true,
-                grid: { color: "rgba(0, 0, 0, 0.05)" },
-                ticks: { font: { size: 10 } }
-            }
-        }
-    }
-});
+        });
 
-// Doctor Utilization by Total Minutes Chart
-new Chart(document.getElementById("doctorUtilizationChart"), {
-    type: 'bar',
-    data: {
-        labels: <?= json_encode($doctorLabels) ?>,
-        datasets: [{
-            label: 'Total Minutes Served',
-            backgroundColor: '#4caf50',
-            data: <?= json_encode($doctorData) ?>
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { display: false },
-            title: {
-                display: true,
-                text: 'Doctor Utilization (Total Minutes Served)'
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                title: { display: true, text: 'Minutes' }
-            }
-        }
-    }
-});
-
-
-window.waitTimeChart = new Chart(document.getElementById('waitTimeChart'), {
-    type: 'bar',
-    data: { labels: [], datasets: [{ label: 'Avg Wait Time', data: [], backgroundColor: '#ffcc80' }] },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
-});
-
-window.utilizationChart = new Chart(document.getElementById('utilizationChart'), {
-    type: 'bar',
-    data: { labels: [], datasets: [{ label: 'Utilization (%)', data: [], backgroundColor: '#81c784' }] },
-    options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
-});
-
-window.doctorUtilizationChart = new Chart(document.getElementById('doctorUtilizationChart'), {
-    type: 'bar',
-    data: {
-        labels: [],
-        datasets: [{
-            label: 'Doctor Utilization (Minutes Served)',
-            data: [],
-            backgroundColor: '#4caf50'
-        }]
-    },
-    options: {
-        responsive: true,
-        indexAxis: 'y',
-        scales: {
-            x: { beginAtZero: true }
-        },
-        plugins: {
-            title: {
-                display: true,
-                text: 'Doctor Utilization Summary'
-            },
-            legend: {
-                display: false
-            }
-        }
-    }
-});
-
-
-window.noShowChart = new Chart(document.getElementById('noShowChart'), {
-    type: 'line',
-    data: { labels: [], datasets: [{ label: 'Missed Appointments', data: [], borderColor: '#ef5350', fill: true, backgroundColor: 'rgba(239,83,80,0.2)' }] },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
-});
-
+    }); // End of DOMContentLoaded
 </script>
 </body>
 </html>

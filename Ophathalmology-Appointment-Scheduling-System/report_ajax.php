@@ -97,19 +97,6 @@ while ($row = mysqli_fetch_assoc($res)) {
     $data['doctor_Utilization'][$row['name']] = $row['total_minutes'] ?? 0;
 }
 
-// 8. No-Show Trends (Last 30 days only, not tied to filter)
-$res = mysqli_query($conn, "
-    SELECT apt_date, COUNT(*) as total_missed
-    FROM appointment
-    WHERE apt_status = 'Missed'
-    AND apt_date >= CURDATE() - INTERVAL 30 DAY
-    GROUP BY apt_date
-    ORDER BY apt_date
-");
-while ($row = mysqli_fetch_assoc($res)) {
-    $data['no_show_trends'][$row['apt_date']] = $row['total_missed'];
-}
-
 header('Content-Type: application/json');
 echo json_encode($data);
 mysqli_close($conn);

@@ -17,7 +17,7 @@ date_default_timezone_set('Asia/Kuala_Lumpur');
 // ✅ Auto-mark missed appointments
 $today = date('Y-m-d');
 $autoUpdateMissed = "UPDATE appointment 
-    SET apt_status = 'Missed' 
+    SET apt_status = 'Missed', was_missed = 1 
     WHERE apt_status = 'Not Assigned' 
     AND apt_date < '$today'";
 mysqli_query($conn, $autoUpdateMissed);
