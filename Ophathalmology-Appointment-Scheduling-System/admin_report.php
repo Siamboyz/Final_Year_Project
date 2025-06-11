@@ -75,17 +75,16 @@ while ($row = mysqli_fetch_assoc($res)) {
     $utilData[] = round(($row['total_minutes'] / 480) * 100, 1);
 }
 
-$roomLabels = $roomData = [];
+$doctorLabels = $doctorData = [];
 $res = mysqli_query($conn, "
-    SELECT r.room_name, COUNT(a.apt_id) AS total_used
-    FROM room r
-    LEFT JOIN doctor d ON r.room_id = d.room_id
+    SELECT d.name, SUM(a.duration_minutes) AS total_minutes
+    FROM doctor d
     LEFT JOIN appointment a ON d.doctor_id = a.doctor_id
-    GROUP BY r.room_id
+    GROUP BY d.doctor_id
 ");
 while ($row = mysqli_fetch_assoc($res)) {
-    $roomLabels[] = $row['room_name'];
-    $roomData[] = $row['total_used'];
+    $doctorLabels[] = $row['name'];
+    $doctorData[] = $row['total_minutes'] ?? 0;
 }
 
 $noShowLabels = $noShowData = [];
@@ -509,9 +508,9 @@ $currentDate = date('Y-m-d');
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="section-title">🏥 Room Usage Frequency</h5>
+                    <h5 class="section-title">🩺 Doctor Utilization by Total Minutes Served</h5>
                     <div class="chart-container">
-                        <canvas id="roomUsageChart"></canvas>
+                        <canvas id="doctorUtilizationChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -627,7 +626,7 @@ function fetchData(startDate, endDate, filterType) {
             updateChart(window.doctorChart, Object.keys(data.doctors), Object.values(data.doctors));
             updateChart(window.waitTimeChart, Object.keys(data.avg_wait_times), Object.values(data.avg_wait_times));
             updateChart(window.utilizationChart, Object.keys(data.doctor_utilization), Object.values(data.doctor_utilization));
-            updateChart(window.roomUsageChart, Object.keys(data.room_usage), Object.values(data.room_usage));
+            updateChart(window.doctorUtilizationChart, Object.keys(data.doctor_Utilization), Object.values(data.doctor_Utilization));
             updateChart(window.noShowChart, Object.keys(data.no_show_trends), Object.values(data.no_show_trends));
         },
         error: function (xhr) {
@@ -775,6 +774,36 @@ new Chart(document.getElementById('monthlyChart'), {
     }
 });
 
+// Doctor Utilization by Total Minutes Chart
+new Chart(document.getElementById("doctorUtilizationChart"), {
+    type: 'bar',
+    data: {
+        labels: <?= json_encode($doctorLabels) ?>,
+        datasets: [{
+            label: 'Total Minutes Served',
+            backgroundColor: '#4caf50',
+            data: <?= json_encode($doctorData) ?>
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            title: {
+                display: true,
+                text: 'Doctor Utilization (Total Minutes Served)'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Minutes' }
+            }
+        }
+    }
+});
+
+
 window.waitTimeChart = new Chart(document.getElementById('waitTimeChart'), {
     type: 'bar',
     data: { labels: [], datasets: [{ label: 'Avg Wait Time', data: [], backgroundColor: '#ffcc80' }] },
@@ -787,11 +816,34 @@ window.utilizationChart = new Chart(document.getElementById('utilizationChart'),
     options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
 });
 
-window.roomUsageChart = new Chart(document.getElementById('roomUsageChart'), {
+window.doctorUtilizationChart = new Chart(document.getElementById('doctorUtilizationChart'), {
     type: 'bar',
-    data: { labels: [], datasets: [{ label: 'Room Usage', data: [], backgroundColor: '#ba68c8' }] },
-    options: { responsive: true, indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Doctor Utilization (Minutes Served)',
+            data: [],
+            backgroundColor: '#4caf50'
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y',
+        scales: {
+            x: { beginAtZero: true }
+        },
+        plugins: {
+            title: {
+                display: true,
+                text: 'Doctor Utilization Summary'
+            },
+            legend: {
+                display: false
+            }
+        }
+    }
 });
+
 
 window.noShowChart = new Chart(document.getElementById('noShowChart'), {
     type: 'line',

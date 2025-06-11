@@ -85,17 +85,16 @@ while ($row = mysqli_fetch_assoc($res)) {
     $data['doctor_utilization'][$row['name']] = round(($row['total_minutes'] / 480) * 100, 1);
 }
 
-// 7. Room Usage
+// 7. Doctor Utilization by Total Minutes Served
 $res = mysqli_query($conn, "
-    SELECT r.room_name, COUNT(a.apt_id) AS total_used
-    FROM room r
-    LEFT JOIN doctor d ON r.room_id = d.room_id
+    SELECT d.name, SUM(a.duration_minutes) AS total_minutes
+    FROM doctor d
     LEFT JOIN appointment a ON d.doctor_id = a.doctor_id
     WHERE $condition
-    GROUP BY r.room_id
+    GROUP BY d.doctor_id
 ");
 while ($row = mysqli_fetch_assoc($res)) {
-    $data['room_usage'][$row['room_name']] = $row['total_used'];
+    $data['doctor_Utilization'][$row['name']] = $row['total_minutes'] ?? 0;
 }
 
 // 8. No-Show Trends (Last 30 days only, not tied to filter)
