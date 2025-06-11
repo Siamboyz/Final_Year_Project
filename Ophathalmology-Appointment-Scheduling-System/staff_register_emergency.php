@@ -132,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['emergency'])) {
             $insertAppointment = "INSERT INTO appointment 
                 (patient_id, doctor_id, apt_date, apt_time, apt_status, apt_priority, apt_notes, visit_type, duration_minutes, validated_datetime)
                 VALUES 
-                ('$patient_id', '$bestDoctorId', '$today', '$currentTime', '$emergencyStatus', '3', 'EMERGENCY CASE', 'Emergency', 15, NOW())";
+                ('$patient_id', '$bestDoctorId', '$today', '$currentTime', '$emergencyStatus', '3', 'EMERGENCY CASE', 'Emergency', 45, NOW())";
 
             if (mysqli_query($conn, $insertAppointment)) {
                 $doctorNameResult = mysqli_query($conn, "SELECT name FROM doctor WHERE doctor_id = '$bestDoctorId' LIMIT 1");
