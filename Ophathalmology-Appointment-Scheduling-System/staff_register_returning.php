@@ -46,10 +46,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $status = 'Scheduled';
     $validateTime = date('Y-m-d H:i:s');
 
+    // Determine duration based on priority
+    switch ($priority) {
+        case '3': // High
+            $duration_minutes = 45;
+            break;
+        case '2': // Medium
+        case '1': // Low
+        default:
+            $duration_minutes = 20;
+            break;
+    }
+
     $sql = "INSERT INTO appointment 
-        (patient_id, doctor_id, apt_date, apt_time, apt_priority, apt_notes, apt_status, validated_datetime)
+        (patient_id, doctor_id, apt_date, apt_time, apt_priority, apt_notes, apt_status, validated_datetime, duration_minutes)
         VALUES 
-        ('$patient_id', '$doctor_id', '$apt_date', '$apt_time', '$priority', '$notes', '$status', '$validateTime')";
+        ('$patient_id', '$doctor_id', '$apt_date', '$apt_time', '$priority', '$notes', '$status', '$validateTime', '$duration_minutes')";
 
     if (mysqli_query($conn, $sql)) {
         echo "<script>alert('✅ Returning appointment successfully scheduled.'); window.location.href='staff_patient_detail.php?id=$patient_id';</script>";
