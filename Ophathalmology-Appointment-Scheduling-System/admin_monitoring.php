@@ -1,4 +1,3 @@
-```php
 <?php
 session_start();
 // admin_monitoring.php - Real-Time Queue Monitoring for Admin
@@ -28,6 +27,7 @@ $sql = "SELECT
             a.apt_id,             -- Appointment ID
             a.apt_time,           -- Appointment Time
             a.apt_status,         -- Appointment Status (e.g., 'Now Serving', 'Paused', 'Emergency')
+            a.visit_type,         -- Added visit_type to determine emergency
             p.name AS patient_name,  -- Patient's name from the 'patient' table
             d.name AS doctor_name,   -- Doctor's name from the 'doctor' table
             r.room_name           -- Room name from the 'room' table
@@ -60,17 +60,23 @@ if (!$result) {
 
 // Loop through each row fetched from the database.
 while ($row = mysqli_fetch_assoc($result)) {
-    // The status is directly taken from the 'apt_status' column in the database.
     $status = $row['apt_status'];
+    $isEmergency = ($row['visit_type'] == 'Emergency'); // Check if it's an emergency visit
+
+    // If it's an emergency, display "Now Serving" but keep the internal flag for styling
+    if ($isEmergency) {
+        $status = 'Now Serving'; // Display "Now Serving" for emergency cases
+    }
 
     // Add the fetched data to the queueData array.
     $queueData[] = [
         'room' => $row['room_name'],      // Room name
         'patient' => $row['patient_name'], // Patient's name
         'doctor' => $row['doctor_name'],  // Doctor's name
-        'status' => $status,              // Current status
+        'status' => $status,              // Display status (Now Serving, Paused, or Emergency)
         'start_time' => $row['apt_time'], // Appointment scheduled time
-        'queue_id' => $row['apt_id']      // Unique appointment ID
+        'queue_id' => $row['apt_id'],      // Unique appointment ID
+        'is_emergency' => $isEmergency    // Flag to indicate if it's an emergency appointment
     ];
 }
 
@@ -82,22 +88,20 @@ mysqli_close($conn);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="5">
     <title>Admin Real-Time Queue Monitoring</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* General body styling for a clean, modern look */
         body {
-            font-family: 'Inter', sans-serif; /* Using Inter font */
-            background-color: #f0f2f5; /* Light grey background */
-            color: #34495e; /* Darker text for professionalism */
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #34495e;
             margin: 0;
             padding: 20px;
             line-height: 1.6;
         }
 
-        /* Main container for the page content, centered and with refined shadow */
         .main-container {
             background-color: white;
             padding: 20px;
@@ -112,189 +116,180 @@ mysqli_close($conn);
             background-color: white;
             text-align: justify;
             margin-left: calc(100% - 80%);
-            max-width: 100%; /* Limits the content width */
+            max-width: 100%;
         }
 
-        /* Breadcrumb styling */
         .breadcrumb {
-            font-size: 13px; /* Slightly smaller */
-            color: #7f8c8d; /* Muted color */
+            font-size: 13px;
+            color: #7f8c8d;
             margin-bottom: 15px;
             text-align: right;
         }
 
-        /* Page title styling */
         h1 {
-            font-size: 1.8rem; /* Slightly larger */
-            color: #007bff; /* Darker, more serious blue/grey */
-            margin-bottom: 10px; /* Adjusted margin */
-            border-bottom: 1px solid #ecf0f1; /* Subtle separator */
+            font-size: 1.8rem;
+            color: #007bff;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ecf0f1;
             padding-bottom: 15px;
         }
 
-        /* Container for queue cards */
         .queue-container {
             display: flex;
             flex-direction: column;
-            gap: 18px; /* Slightly reduced gap */
+            gap: 18px;
         }
 
-        /* Individual queue card styling with a more professional look */
         .queue-card {
             background: #ffffff;
-            border: 1px solid #e0e6ed; /* Subtle border */
+            border: 1px solid #e0e6ed;
             border-radius: 8px;
-            padding: 20px 25px; /* Adjusted padding */
+            padding: 20px 25px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth hover effect */
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
 
         .queue-card:hover {
-            transform: translateY(-3px); /* Lift effect on hover */
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); /* Enhanced shadow on hover */
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
-        /* Styling for headings within queue cards */
         .queue-card h4 {
             margin: 0;
-            font-size: 1.15rem; /* Slightly larger room name */
-            color: #3498db; /* A professional blue */
+            font-size: 1.15rem;
+            color: #3498db;
             margin-bottom: 4px;
             font-weight: 600;
         }
 
-        /* Styling for paragraphs within queue cards */
         .queue-card p {
             font-size: 1rem;
             margin-bottom: 3px;
-            color: #5d6d7e; /* Slightly lighter text */
+            color: #5d6d7e;
         }
 
         .queue-card p strong {
-            color: #34495e; /* Stronger bold text */
+            color: #34495e;
         }
 
-        /* Patient information section within a queue card */
         .patient-info {
             flex-grow: 1;
-            margin-right: 30px; /* More space */
+            margin-right: 30px;
         }
 
-        /* Status-specific left border colors for queue cards (more muted/professional tones) */
         .queue-card.paused {
-            border-left: 6px solid #f39c12; /* Professional orange */
+            border-left: 6px solid #f39c12;
         }
 
+        /* This border will be used for both "Emergency" appointments (which display as "Now Serving") */
         .queue-card.emergency {
-            border-left: 6px solid #e74c3c; /* Professional red */
+            border-left: 6px solid #e74c3c;
         }
 
         .queue-card.now-serving {
-            border-left: 6px solid #27ae60; /* Professional green */
+            border-left: 6px solid #27ae60;
         }
 
-        /* Container for the redesigned status visualizer (text + progress bar) */
         .status-visualizer {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            min-width: 220px; /* Slightly wider */
-            flex-shrink: 0; /* Prevent shrinking on smaller screens */
-            position: relative; /* For positioning the emergency label */
+            min-width: 220px;
+            flex-shrink: 0;
+            position: relative;
         }
 
-        /* Styling for the status text (e.g., "Now Serving") */
         .status-text {
             font-size: 1rem;
-            font-weight: 600; /* Medium-bold */
-            margin-bottom: 50px; /* More space */
+            font-weight: 600;
+            margin-bottom: 50px; /* Adjusted to make space for the label above */
             color: #34495e;
-            text-transform: uppercase; /* Uppercase for a crisp look */
+            text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        /* The background track of the progress bar */
-        .status-progress-bar {
-            width: 100%;
-            height: 10px; /* Slightly thicker */
-            background-color: #ecf0f1; /* Lighter grey track */
-            border-radius: 5px;
-            position: relative;
-
+        /* Ensure the status text for emergency cards is red */
+        .queue-card.emergency .status-text {
+            color: #e74c3c; /* Red text for emergency status */
         }
 
-        /* The colored fill of the progress bar */
+        .status-progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            position: relative;
+        }
+
         .progress-fill {
             height: 100%;
             border-radius: 5px;
             position: relative;
-            transition: width 0.6s ease-out, background-color 0.4s ease; /* Slower, smoother transition */
+            transition: width 0.6s ease-out, background-color 0.4s ease;
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); /* Inner shadow for depth */
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        /* The circular "thumb" indicator on the progress bar */
         .progress-thumb {
             position: absolute;
             top: 50%;
             right: 0;
             transform: translate(50%, -50%);
-            width: 28px; /* Slightly larger thumb */
+            width: 28px;
             height: 28px;
             border-radius: 50%;
-            background-color: #ffffff; /* White background */
-            border: 4px solid; /* Thicker border */
+            background-color: #ffffff;
+            border: 4px solid;
             display: flex;
             align-items: center;
             justify-content: center;
-            /* No direct font-size or color for the thumb itself, only for its content */
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* More prominent shadow */
-            z-index: 2; /* Ensure thumb is always on top */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 2;
+            font-size: 14px; /* Adjust emoji size */
         }
 
-        /* NEW STYLES FOR THE ICON BACKGROUND */
         .progress-thumb .icon-bg-wrapper {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 18px;   /* Size of the blue square background */
+            width: 18px;
             height: 18px;
-            background-color: #3498db; /* Blue background for the icon */
-            border-radius: 3px; /* Slightly rounded corners for the blue square */
-            font-size: 10px; /* Smaller icon size to fit */
-            color: white; /* White color for the Font Awesome icon */
-            overflow: hidden; /* Ensure nothing overflows */
+            background-color: #3498db;
+            border-radius: 3px;
+            font-size: 10px;
+            color: white;
+            overflow: hidden;
         }
 
-        /* Status-specific styles for the progress fill and thumb border (refined colors) */
         .progress-fill.now-serving {
-            background-color: #2ecc71; /* Professional green */
-            width: 80%; /* Simulate active progress */
-            background-image: linear-gradient(to right, #2ecc71, #27ae60); /* Subtle gradient */
+            background-color: #2ecc71;
+            width: 80%;
+            background-image: linear-gradient(to right, #2ecc71, #27ae60);
         }
         .progress-fill.now-serving .progress-thumb {
             border-color: #27ae60;
         }
 
         .progress-fill.paused {
-            background-color: #f1c40f; /* Professional yellow/orange */
-            width: 50%; /* Simulate paused state */
-            background-image: linear-gradient(to right, #f1c40f, #f39c12); /* Subtle gradient */
+            background-color: #f1c40f;
+            width: 50%;
+            background-image: linear-gradient(to right, #f1c40f, #f39c12);
         }
         .progress-fill.paused .progress-thumb {
             border-color: #f39c12;
         }
 
-        .progress-fill.emergency {
+        /* Specific styles for emergency now serving */
+        .progress-fill.emergency-now-serving {
             background-color: #e74c3c; /* Professional red */
-            width: 100%; /* Simulate urgent, full attention */
-            background-image: linear-gradient(to right, #e74c3c, #c0392b); /* Subtle gradient */
+            width: 80%; /* Simulate urgent, full attention */
+            background-image: linear-gradient(to right, #e74c3c, #c0392b);
         }
-        .progress-fill.emergency .progress-thumb {
+        .progress-fill.emergency-now-serving .progress-thumb {
             border-color: #c0392b;
         }
 
@@ -311,12 +306,12 @@ mysqli_close($conn);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             z-index: 3;
-            transform: translateY(-100%); /* Position above the status visualizer */
-            margin-right: -10px; /* Adjust as needed for alignment */
+            /* Position directly above the status text, aligning with its right edge */
+            transform: translateY(-130%); /* Adjusted for more space above status text */
+            margin-right: -10px; /* To align with the right edge of the visualizer */
         }
 
 
-        /* Responsive adjustments */
         @media (max-width: 768px) {
             .main-container {
                 padding: 15px;
@@ -335,30 +330,30 @@ mysqli_close($conn);
             }
 
             .queue-card {
-                flex-direction: column; /* Stack items vertically on smaller screens */
-                align-items: flex-start; /* Align to the start when stacked */
+                flex-direction: column;
+                align-items: flex-start;
                 padding: 15px;
             }
 
             .patient-info {
                 margin-right: 0;
-                margin-bottom: 15px; /* Add space below info when stacked */
-                width: 100%; /* Take full width */
+                margin-bottom: 15px;
+                width: 100%;
             }
 
             .status-visualizer {
-                width: 100%; /* Take full width */
-                align-items: flex-start; /* Align to the start when stacked */
-                min-width: unset; /* Remove min-width restriction */
+                width: 100%;
+                align-items: flex-start;
+                min-width: unset;
             }
 
             .status-text {
-                align-self: flex-start; /* Ensure text aligns left above bar */
+                align-self: flex-start;
             }
             .emergency-label {
                 right: unset;
                 left: 0;
-                transform: translateY(-100%);
+                transform: translateY(-130%); /* Adjusted for more space above status text */
                 margin-right: 0;
                 margin-left: -10px;
             }
@@ -378,7 +373,7 @@ mysqli_close($conn);
                 <p style="text-align: center; color: #7f8c8d; padding: 20px; border: 1px dashed #dbe3eb; border-radius: 8px;">No patients in the queue at the moment.</p>
             <?php } else { ?>
                 <?php foreach ($queueData as $data) { ?>
-                    <div class="queue-card <?= strtolower(str_replace(' ', '-', $data['status'])) ?>">
+                    <div class="queue-card <?= $data['is_emergency'] ? 'emergency' : strtolower(str_replace(' ', '-', $data['status'])) ?>">
                         <div class="patient-info">
                             <h4>Room: <?= htmlspecialchars($data['room']) ?></h4>
                             <p><strong>Now Serving:</strong> <?= htmlspecialchars($data['patient']) ?></p>
@@ -387,22 +382,21 @@ mysqli_close($conn);
                         </div>
 
                         <div class="status-visualizer">
-                            <?php if ($data['status'] == 'Emergency') { ?>
+                            <?php if ($data['is_emergency']) { ?>
                                 <span class="emergency-label">Emergency</span>
                             <?php } ?>
                             <span class="status-text"><?= htmlspecialchars($data['status']) ?></span>
                             <div class="status-progress-bar">
-                                <div class="progress-fill <?= strtolower(str_replace(' ', '-', $data['status'])) ?>">
+                                <div class="progress-fill <?= $data['is_emergency'] ? 'emergency-now-serving' : strtolower(str_replace(' ', '-', $data['status'])) ?>">
                                     <div class="progress-thumb">
                                         <?php
-                                        // Conditional rendering of icons based on status
-                                        if ($data['status'] == 'Now Serving') {
-                                            // Specific styling for the play icon
-                                            echo '<span class="icon-bg-wrapper"><i class="fas fa-play"></i></span>';
+                                        // Conditional rendering of icons based on 'is_emergency' flag or status
+                                        if ($data['is_emergency']) {
+                                            echo '⚠️'; // Emergency icon
+                                        } elseif ($data['status'] == 'Now Serving') {
+                                            echo '<span class="icon-bg-wrapper"><i class="fas fa-play"></i></span>'; // Play icon for standard 'Now Serving'
                                         } elseif ($data['status'] == 'Paused') {
-                                            echo '⏸️'; // Emoji for Paused
-                                        } elseif ($data['status'] == 'Emergency') {
-                                            echo '⚠️'; // Emoji for Emergency
+                                            echo '⏸️'; // Paused icon
                                         }
                                         ?>
                                     </div>
