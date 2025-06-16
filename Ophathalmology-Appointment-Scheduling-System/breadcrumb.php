@@ -37,6 +37,9 @@ switch ($pageName) {
     case "staff_profile.php":
         $breadcrumbTitle = "Counter staff / My Profile";
         break;
+    case "patient_incomplete_profile.php":
+        $breadcrumbTitle = "Counter staff / Incompleted Profile";
+        break;
     case "doctor_session.php":
         $breadcrumbTitle = "Doctor / Manage Session";
         break;

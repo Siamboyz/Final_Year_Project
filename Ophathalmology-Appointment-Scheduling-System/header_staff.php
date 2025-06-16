@@ -6,112 +6,170 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>SlideBar</title>
     <style>
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    /* Header Styling */
-    .header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        background-color: #B3E5FC; /* Light Blue */
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 18px 30px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        border-bottom: 1px solid #e0e0e0;
-        z-index: 1000;
-    }
+        /* Header Styling */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #B3E5FC; /* Light Blue */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 30px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid #e0e0e0;
+            z-index: 1000;
+        }
 
-    .header .logo {
-        font-size: 22px;
-        font-weight: bold;
-        color:rgb(1, 46, 72); /* Deep Blue */
-    }
+        .header .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color:rgb(1, 46, 72); /* Deep Blue */
+        }
 
-    .header .user-info {
-        font-size: 16px;
-        color:rgb(1, 46, 72);
-        font-weight: bold;
-    }
+        .header .user-info-wrapper { /* New wrapper for user-info and notification */
+            display: flex;
+            align-items: center;
+            position: relative; /* For dropdown positioning */
+        }
 
-    /* Sidebar Navigation */
-    .container {
-        display: flex;
-        width: 100%;
-        margin-top: 50px; /* Creates space below header */
-        flex-grow: 1; /* Ensures sidebar grows properly */
-    }
+        .header .user-info {
+            font-size: 16px;
+            color:rgb(1, 46, 72);
+            font-weight: bold;
+            margin-right: 15px; /* Space between text and icon */
+        }
 
-    .sidebar {
-        width: 20%;
-        background-color: #ffffff;
-        border-right: 2px solid #ddd;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        position: fixed;
-        left: 0;
-    }
+        /* Notification Icon Styling */
+        .notification-icon {
+            cursor: pointer;
+            font-size: 20px;
+            color: rgb(1, 46, 72);
+            position: relative;
+        }
 
-    .sidebar ul {
-        display: flex;
-        flex-direction: column;
-        height: 100vh; /* full height of the sidebar */
-        padding: 0;
-        margin: 0;
-        list-style-type: none;
-    }
+        .notification-icon:hover {
+            color: #0288D1; /* Hover effect */
+        }
 
-    .sidebar ul li {
-        border-bottom: 1px solid #eee;
-    }
+        /* Notification Dropdown Styling */
+        .notification-dropdown {
+            display: none; /* Hidden by default */
+            position: absolute;
+            top: 40px; /* Position below the icon */
+            right: 0;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            min-width: 220px;
+            z-index: 1001;
+            overflow: hidden;
+        }
 
-    .sidebar ul li a {
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-        color: #333;
-        padding: 15px 20px;
-        transition: all 0.3s ease;
-        font-size: 17px;
-    }
+        .notification-dropdown.show {
+            display: block; /* Show when 'show' class is added */
+        }
 
-    .sidebar ul li a:hover {
-        background-color: #4FC3F7; /* Moderate Blue */
-        color: white;
-        border-left: 4px solid #0288D1; /* Deep Blue */
-        padding-left: 16px;
-    }
+        .notification-dropdown ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
 
-    .sidebar ul li.active a {
-        background-color: #81D4FA; /* Soft Blue */
-        color: #000;
-        font-weight: bold;
-        border-left: 4px solid #0288D1; /* Deep Blue */
-        padding-left: 16px;
-    }
+        .notification-dropdown ul li a {
+            display: block;
+            padding: 12px 20px;
+            text-decoration: none;
+            color: #333;
+            font-size: 15px;
+            white-space: nowrap; /* Prevent text wrapping */
+        }
 
-    .sidebar ul li a .icon {
-        margin-right: 10px;
-        font-size: 18px;
-    }
+        .notification-dropdown ul li a:hover {
+            background-color: #f0f0f0;
+            color: #0288D1;
+        }
 
-    ul li.logout {
-        margin-top: auto; /* pushes it to the bottom */
-        position: fixed;
-        bottom: 0;
-        width: 20%;
-    }
 
-    .logout .icon {
-        margin-right: 10px;
-    }
+        /* Sidebar Navigation */
+        .container {
+            display: flex;
+            width: 100%;
+            margin-top: 50px; /* Creates space below header */
+            flex-grow: 1; /* Ensures sidebar grows properly */
+        }
 
-</style>
+        .sidebar {
+            width: 20%;
+            background-color: #ffffff;
+            border-right: 2px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: fixed;
+            left: 0;
+        }
+
+        .sidebar ul {
+            display: flex;
+            flex-direction: column;
+            height: 100vh; /* full height of the sidebar */
+            padding: 0;
+            margin: 0;
+            list-style-type: none;
+        }
+
+        .sidebar ul li {
+            border-bottom: 1px solid #eee;
+        }
+
+        .sidebar ul li a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #333;
+            padding: 15px 20px;
+            transition: all 0.3s ease;
+            font-size: 17px;
+        }
+
+        .sidebar ul li a:hover {
+            background-color: #4FC3F7; /* Moderate Blue */
+            color: white;
+            border-left: 4px solid #0288D1; /* Deep Blue */
+            padding-left: 16px;
+        }
+
+        .sidebar ul li.active a {
+            background-color: #81D4FA; /* Soft Blue */
+            color: #000;
+            font-weight: bold;
+            border-left: 4px solid #0288D1; /* Deep Blue */
+            padding-left: 16px;
+        }
+
+        .sidebar ul li a .icon {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        ul li.logout {
+            margin-top: auto; /* pushes it to the bottom */
+            position: fixed;
+            bottom: 0;
+            width: 20%;
+        }
+
+        .logout .icon {
+            margin-right: 10px;
+        }
+
+    </style>
 </head>
 <body>
 
@@ -119,8 +177,16 @@
     <div class="logo">
         <span>OASS | OPHTHALMOLOGY APPOINTMENT SCHEDULING SYSTEM</span>
     </div>
-    <div class="user-info">
-        <span>Welcome, <?php echo $_SESSION['name']; ?> </span>
+    <div class="user-info-wrapper"> <div class="user-info">
+            <span>Welcome, <?php echo $_SESSION['name']; ?> </span>
+        </div>
+        <div class="notification-icon" id="notificationIcon">
+            🔔 </div>
+        <div class="notification-dropdown" id="notificationDropdown">
+            <ul>
+                <li><a href="patient_incomplete_profile.php">Patient Incompleted Profile > </a></li>
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -155,6 +221,25 @@
         </ul>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const notificationIcon = document.getElementById('notificationIcon');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+
+        notificationIcon.addEventListener('click', function(event) {
+            event.stopPropagation(); // Prevent document click from closing immediately
+            notificationDropdown.classList.toggle('show');
+        });
+
+        // Close the dropdown if the user clicks outside of it
+        document.addEventListener('click', function(event) {
+            if (!notificationIcon.contains(event.target) && !notificationDropdown.contains(event.target)) {
+                notificationDropdown.classList.remove('show');
+            }
+        });
+    });
+</script>
 
 </body>
 </html>
