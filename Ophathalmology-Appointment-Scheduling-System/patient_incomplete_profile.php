@@ -108,6 +108,7 @@ if ($incomplete_patients_query) {
             overflow: hidden; /* Ensures rounded corners apply to content within */
             border: 1px solid #e2e8f0; /* Light border for the container */
             background-color: white; /* Equivalent to bg-white */
+            margin: 0 auto; /* Center the table container */
         }
         table {
             min-width: 100%; /* Equivalent to min-w-full */
