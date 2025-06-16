@@ -81,7 +81,7 @@ $res = mysqli_query($conn, "
     SELECT d.name, COUNT(a.apt_id) AS total
     FROM doctor d
     LEFT JOIN appointment a ON a.doctor_id = d.doctor_id
-    WHERE $condition
+    WHERE $condition AND apt_status = 'Completed'
     GROUP BY d.doctor_id
     ORDER BY total DESC
     LIMIT 5
@@ -107,7 +107,7 @@ $res = mysqli_query($conn, "
     SELECT d.name, SUM(a.duration_minutes) AS total_minutes
     FROM doctor d
     LEFT JOIN appointment a ON d.doctor_id = a.doctor_id
-    WHERE $condition
+    WHERE $condition AND apt_status = 'Completed'
     GROUP BY d.doctor_id
 ");
 while ($row = mysqli_fetch_assoc($res)) {
@@ -119,7 +119,7 @@ $res = mysqli_query($conn, "
     SELECT d.name, SUM(a.duration_minutes) AS total_minutes
     FROM doctor d
     LEFT JOIN appointment a ON d.doctor_id = a.doctor_id
-    WHERE $condition
+    WHERE $condition AND apt_status = 'Completed'
     GROUP BY d.doctor_id
 ");
 while ($row = mysqli_fetch_assoc($res)) {
