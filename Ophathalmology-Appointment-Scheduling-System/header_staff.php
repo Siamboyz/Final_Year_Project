@@ -100,7 +100,9 @@
         }
 
         .notification-dropdown ul li a {
-            display: block;
+            display: flex; /* Use flexbox to align text and indicator */
+            justify-content: space-between; /* Space out content */
+            align-items: center;
             padding: 12px 20px;
             text-decoration: none;
             color: #333;
@@ -111,6 +113,21 @@
         .notification-dropdown ul li a:hover {
             background-color: #f0f0f0;
             color: #0288D1;
+        }
+
+        /* Subpage Notification Indicator */
+        .subpage-notification-indicator {
+            background-color: red; /* Green color for subpage indicator */
+            color: white;
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+            font-size: 8px; /* Smaller font for tiny dot */
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px; /* Space between text and indicator */
+            flex-shrink: 0; /* Prevent it from shrinking */
         }
 
 
@@ -205,7 +222,7 @@
         </div>
         <div class="notification-dropdown" id="notificationDropdown">
             <ul>
-                <li><a href="patient_incomplete_profile.php">Patient Incompleted Profile > </a></li>
+                <li><a href="patient_incomplete_profile.php">Patient Incompleted Profile <span class="subpage-notification-indicator" id="incompleteProfileIndicator"></span></a></li>
             </ul>
         </div>
     </div>
@@ -248,6 +265,7 @@
         const notificationIcon = document.getElementById('notificationIcon');
         const notificationDropdown = document.getElementById('notificationDropdown');
         const notificationIndicator = document.getElementById('notificationIndicator');
+        const incompleteProfileIndicator = document.getElementById('incompleteProfileIndicator');
 
         // Function to check for incomplete profiles (replace with actual AJAX/PHP call)
         function checkForIncompleteProfiles() {
@@ -258,9 +276,11 @@
             const hasIncompleteProfiles = Math.random() > 0.5; // Simulate a check
 
             if (hasIncompleteProfiles) {
-                notificationIndicator.style.display = 'flex'; // Show the indicator
+                notificationIndicator.style.display = 'flex'; // Show the main indicator
+                incompleteProfileIndicator.style.display = 'flex'; // Show the subpage indicator
             } else {
-                notificationIndicator.style.display = 'none'; // Hide the indicator
+                notificationIndicator.style.display = 'none'; // Hide the main indicator
+                incompleteProfileIndicator.style.display = 'none'; // Hide the subpage indicator
             }
         }
 
@@ -270,8 +290,8 @@
         notificationIcon.addEventListener('click', function(event) {
             event.stopPropagation(); // Prevent document click from closing immediately
             notificationDropdown.classList.toggle('show');
-            // Optionally, hide the indicator once the dropdown is opened
-            notificationIndicator.style.display = 'none';
+            // Optionally, hide the main indicator once the dropdown is opened
+            // notificationIndicator.style.display = 'none'; // Uncomment if you want it to hide on click
         });
 
         // Close the dropdown if the user clicks outside of it
@@ -279,6 +299,13 @@
             if (!notificationIcon.contains(event.target) && !notificationDropdown.contains(event.target)) {
                 notificationDropdown.classList.remove('show');
             }
+        });
+
+        // Optionally, hide the subpage indicator when its link is clicked
+        incompleteProfileIndicator.closest('a').addEventListener('click', function() {
+            incompleteProfileIndicator.style.display = 'none';
+            // You might also want to re-evaluate the main notification indicator here
+            // if there are no other notifications remaining after this one is cleared.
         });
     });
 </script>
