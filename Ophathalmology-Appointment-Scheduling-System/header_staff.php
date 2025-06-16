@@ -57,6 +57,24 @@
             color: #0288D1; /* Hover effect */
         }
 
+        /* Notification Indicator */
+        .notification-indicator {
+            position: absolute;
+            top: -5px; /* Adjust as needed */
+            right: -5px; /* Adjust as needed */
+            background-color: #FF5252; /* Red color for indicator */
+            color: white;
+            border-radius: 50%;
+            width: 15px;
+            height: 15px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            /* display: none; */ /* Initially hidden, show with JavaScript */
+        }
+
         /* Notification Dropdown Styling */
         .notification-dropdown {
             display: none; /* Hidden by default */
@@ -177,11 +195,14 @@
     <div class="logo">
         <span>OASS | OPHTHALMOLOGY APPOINTMENT SCHEDULING SYSTEM</span>
     </div>
-    <div class="user-info-wrapper"> <div class="user-info">
+    <div class="user-info-wrapper">
+        <div class="user-info">
             <span>Welcome, <?php echo $_SESSION['name']; ?> </span>
         </div>
         <div class="notification-icon" id="notificationIcon">
-            🔔 </div>
+            🔔
+            <div class="notification-indicator" id="notificationIndicator">!</div>
+        </div>
         <div class="notification-dropdown" id="notificationDropdown">
             <ul>
                 <li><a href="patient_incomplete_profile.php">Patient Incompleted Profile > </a></li>
@@ -226,10 +247,31 @@
     document.addEventListener('DOMContentLoaded', function() {
         const notificationIcon = document.getElementById('notificationIcon');
         const notificationDropdown = document.getElementById('notificationDropdown');
+        const notificationIndicator = document.getElementById('notificationIndicator');
+
+        // Function to check for incomplete profiles (replace with actual AJAX/PHP call)
+        function checkForIncompleteProfiles() {
+            // This is a placeholder. In a real application, you would make an AJAX
+            // request to your server (e.g., to a PHP script) to check if there
+            // are any incomplete patient profiles.
+            // For demonstration, we'll randomly show the indicator.
+            const hasIncompleteProfiles = Math.random() > 0.5; // Simulate a check
+
+            if (hasIncompleteProfiles) {
+                notificationIndicator.style.display = 'flex'; // Show the indicator
+            } else {
+                notificationIndicator.style.display = 'none'; // Hide the indicator
+            }
+        }
+
+        // Call the function when the page loads
+        checkForIncompleteProfiles();
 
         notificationIcon.addEventListener('click', function(event) {
             event.stopPropagation(); // Prevent document click from closing immediately
             notificationDropdown.classList.toggle('show');
+            // Optionally, hide the indicator once the dropdown is opened
+            notificationIndicator.style.display = 'none';
         });
 
         // Close the dropdown if the user clicks outside of it
