@@ -14,21 +14,38 @@ $currentDay = date('l');
 
 // Get search term
 $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : "";
+$tab = isset($_GET['tab']) ? $_GET['tab'] : 'appointment'; // Default to 'appointment' tab
 
-// SQL with optional filter
-$query = "SELECT a.*, p.name AS patient_name, d.name AS doctor_name 
+// SQL for Appointments (original query)
+$appointmentQuery = "SELECT a.*, p.name AS patient_name, d.name AS doctor_name 
           FROM appointment a
           JOIN patient p ON a.patient_id = p.patient_id
           JOIN doctor d ON a.doctor_id = d.doctor_id
           WHERE a.apt_date = '$currentDate'";
 
 if (!empty($search)) {
-    $query .= " AND p.name LIKE '%$search%'";
+    $appointmentQuery .= " AND p.name LIKE '%$search%'";
 }
 
-$query .= " ORDER BY a.apt_time ASC";
+$appointmentQuery .= " ORDER BY a.apt_time ASC";
 
-$result = mysqli_query($conn, $query);
+$appointmentResult = mysqli_query($conn, $appointmentQuery);
+
+// SQL for Missed Appointments (new query)
+$missedAppointmentQuery = "SELECT a.*, p.name AS patient_name, d.name AS doctor_name
+                           FROM appointment a
+                           JOIN patient p ON a.patient_id = p.patient_id
+                           JOIN doctor d ON a.doctor_id = d.doctor_id
+                           WHERE a.apt_date < '$currentDate' AND a.apt_status != 'completed' AND a.apt_status != 'cancelled'";
+
+if (!empty($search)) {
+    $missedAppointmentQuery .= " AND p.name LIKE '%$search%'";
+}
+
+$missedAppointmentQuery .= " ORDER BY a.apt_date DESC, a.apt_time DESC";
+
+$missedAppointmentResult = mysqli_query($conn, $missedAppointmentQuery);
+
 ?>
 
 <!doctype html>
@@ -125,6 +142,10 @@ $result = mysqli_query($conn, $query);
             background-color: #007bff; /* blue */
         }
 
+        .badge-missed {
+            background-color: #6c757d; /* grey */
+        }
+
         .no-appointments {
             text-align: center;
             color: #888;
@@ -147,7 +168,6 @@ $result = mysqli_query($conn, $query);
             gap: 10px;
             flex-wrap: wrap; /* allows wrapping on small screens */
         }
-
 
         .search-form input[type="text"] {
             padding: 10px 14px;
@@ -207,6 +227,46 @@ $result = mysqli_query($conn, $query);
             background-color: #e6f2ff;
         }
 
+        /* Tab styles */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            background-color: #f0f4f8;
+            color: #555;
+            font-weight: bold;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            transition: background-color 0.3s, color 0.3s;
+            text-decoration: none; /* For anchor tags */
+        }
+
+        .tab-button:hover {
+            background-color: #e2e8f0;
+        }
+
+        .tab-button.active {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-bottom: 1px solid white;
+            color: #007bff;
+        }
+
+        .tab-content {
+            display: none;
+            padding-top: 10px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -215,12 +275,17 @@ $result = mysqli_query($conn, $query);
     <h1>Counter Staff | Appointment</h1>
     <?php include 'breadcrumb.php'; ?>
 
-    <div class="tab-content active">
+    <div class="tabs">
+        <a href="?tab=appointment&search=<?= htmlspecialchars($search) ?>" class="tab-button <?= ($tab === 'appointment') ? 'active' : '' ?>">Appointment</a>
+        <a href="?tab=missed_appointment&search=<?= htmlspecialchars($search) ?>" class="tab-button <?= ($tab === 'missed_appointment') ? 'active' : '' ?>">Missed Appointment</a>
+    </div>
+
+    <div id="appointmentTab" class="tab-content <?= ($tab === 'appointment') ? 'active' : '' ?>">
         <p class="datetime-bar"><strong>Date:</strong> <?= date('d/m/Y', strtotime($currentDate)) ?> |
             <strong>Day:</strong> <?= $currentDay ?> |
             <strong>Current Time:</strong> <?= $currentTime ?></p>
-        <!-- 🔍 Search Form -->
         <form class="search-form" method="GET" action="staff_appointment.php">
+            <input type="hidden" name="tab" value="appointment">
             <input type="text" name="search" placeholder="Search by patient name..." value="<?= htmlspecialchars($search) ?>">
             <button type="submit">Search</button>
         </form>
@@ -239,7 +304,7 @@ $result = mysqli_query($conn, $query);
             <tbody>
             <?php
             $index = 1;
-            while ($row = mysqli_fetch_assoc($result)) {
+            while ($row = mysqli_fetch_assoc($appointmentResult)) {
                 $patient_id = $row['patient_id']; // Get patient_id from query result
                 echo "<tr class='clickable-row' onclick=\"window.location.href='staff_patient_detail.php?id=$patient_id'\">";
                 echo "<td>{$index}</td>";
@@ -273,7 +338,53 @@ $result = mysqli_query($conn, $query);
             }
 
             if ($index === 1) {
-                echo "<tr><td colspan='7' class='no-appointments'>No appointments found for today.</td></tr>";
+                echo "<tr><td colspan='6' class='no-appointments'>No appointments found for today.</td></tr>";
+            }
+            ?>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="missedAppointmentTab" class="tab-content <?= ($tab === 'missed_appointment') ? 'active' : '' ?>">
+        <p class="datetime-bar"><strong>Date:</strong> <?= date('d/m/Y', strtotime($currentDate)) ?> |
+            <strong>Day:</strong> <?= $currentDay ?> |
+            <strong>Current Time:</strong> <?= $currentTime ?></p>
+        <form class="search-form" method="GET" action="staff_appointment.php">
+            <input type="hidden" name="tab" value="missed_appointment">
+            <input type="text" name="search" placeholder="Search by patient name..." value="<?= htmlspecialchars($search) ?>">
+            <button type="submit">Search</button>
+        </form>
+        <br>
+        <table>
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Patient Name</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Doctor</th>
+                <th>Status</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php
+            $index = 1;
+            while ($row = mysqli_fetch_assoc($missedAppointmentResult)) {
+                $patient_id = $row['patient_id']; // Get patient_id from query result
+                echo "<tr class='clickable-row' onclick=\"window.location.href='staff_patient_detail.php?id=$patient_id'\">";
+                echo "<td>{$index}</td>";
+                echo "<td>" . htmlspecialchars($row['patient_name']) . "</td>";
+                echo "<td>" . date('d/m/Y', strtotime($row['apt_date'])) . "</td>";
+                echo "<td>" . date('h:i A', strtotime($row['apt_time'])) . "</td>";
+                echo "<td>" . htmlspecialchars($row['doctor_name']) . "</td>";
+                echo "<td>";
+                echo "<span class='badge badge-missed'>Missed</span>"; // Always 'Missed' for this tab
+                echo "</td></tr>";
+                $index++;
+            }
+
+            if ($index === 1) {
+                echo "<tr><td colspan='6' class='no-appointments'>No missed appointments found.</td></tr>";
             }
             ?>
             </tbody>
