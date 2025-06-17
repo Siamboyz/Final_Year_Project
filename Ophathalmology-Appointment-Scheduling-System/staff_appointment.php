@@ -36,7 +36,7 @@ $missedAppointmentQuery = "SELECT a.*, p.name AS patient_name, d.name AS doctor_
                            FROM appointment a
                            JOIN patient p ON a.patient_id = p.patient_id
                            JOIN doctor d ON a.doctor_id = d.doctor_id
-                           WHERE a.apt_date < '$currentDate' AND a.apt_status != 'completed' AND a.apt_status != 'cancelled'";
+                           WHERE a.apt_date < '$currentDate' AND a.apt_status = 'Missed'";
 
 if (!empty($search)) {
     $missedAppointmentQuery .= " AND p.name LIKE '%$search%'";
