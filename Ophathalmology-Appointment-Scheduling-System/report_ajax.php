@@ -92,14 +92,16 @@ while ($row = mysqli_fetch_assoc($res)) {
 
 // 4. Avg Wait Time per Visit Type (filtered by date range)
 $res = mysqli_query($conn, "
-    SELECT visit_type, AVG(TIMESTAMPDIFF(MINUTE, validated_datetime, CONCAT(apt_date, ' ', apt_time))) AS avg_wait
-    FROM appointment
-    WHERE validated_datetime IS NOT NULL AND apt_time IS NOT NULL AND $condition
-    GROUP BY visit_type
+SELECT visit_type, AVG(TIMESTAMPDIFF(MINUTE, validated_datetime, served_datetime)) AS avg_wait
+FROM appointment
+WHERE validated_datetime IS NOT NULL AND served_datetime IS NOT NULL AND $condition
+GROUP BY visit_type
 ");
+
 while ($row = mysqli_fetch_assoc($res)) {
     $data['avg_wait_times'][$row['visit_type']] = round($row['avg_wait'], 1);
 }
+
 
 // 5. Doctor Utilization (Percentage - filtered by date range)
 // Assuming 8 hours workday = 480 minutes for this calculation within the selected range

@@ -19,7 +19,7 @@ $currentTimestamp = date('Y-m-d H:i:s');
 $autoUpdateMissed = "
     UPDATE appointment
     SET apt_status = 'Missed', was_missed = 1
-    WHERE apt_status IN ('Not Assigned', 'Scheduled', 'Pending')
+    WHERE apt_status NOT IN ('Not Assigned', 'Scheduled', 'Completed', 'Now Serving')
     AND CONCAT(apt_date, ' ', apt_time) < '$currentTimestamp'
 ";
 mysqli_query($conn, $autoUpdateMissed);

@@ -25,6 +25,15 @@ $appointmentQuery = mysqli_query($conn, "
 
 $appointment = mysqli_fetch_assoc($appointmentQuery);
 
+// ✅ Auto-fill served_datetime if not set yet
+if (!empty($appointment) && empty($appointment['served_datetime'])) {
+    $aptId = $appointment['apt_id'];
+    $now = date('Y-m-d H:i:s');
+    mysqli_query($conn, "UPDATE appointment SET served_datetime = '$now' WHERE apt_id = '$aptId'");
+    $appointment['served_datetime'] = $now; // update local variable to prevent null reference
+}
+
+
 // ✅ Fetch history if current appointment exists
 $history = [];
 if (!empty($appointment)) {
