@@ -94,35 +94,6 @@ if ($incomplete_patients_query) {
             font-size: 14px;
             color: #666;
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        table th, table td {
-            padding: 12px;
-            border: 1px solid #ccc;
-            text-align: center;
-        }
-
-        table th {
-            background-color: #ffe6e6;
-        }
-
-        .btn-complete {
-            background-color: #007bff;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .btn-complete:hover {
-            background-color: #0056b3;
-        }
     </style>
 </head>
 <body>
@@ -168,39 +139,6 @@ if ($incomplete_patients_query) {
                 <span>Till Today</span>
             </div>
         </section>
-
-        <!-- Reminder for Incomplete Profiles -->
-        <section style="margin-top: 50px;">
-            <h2 style="color: #dc3545;">⚠ Patients with Incomplete Profile</h2>
-
-            <?php if (count($incomplete_patients) > 0): ?>
-                <table>
-                    <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Patient Name</th>
-                        <th>IC Number</th>
-                        <th>Action</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($incomplete_patients as $index => $patient): ?>
-                        <tr>
-                            <td><?= $index + 1 ?></td>
-                            <td><?= htmlspecialchars($patient['name']) ?></td>
-                            <td><?= htmlspecialchars($patient['no_ic']) ?></td>
-                            <td>
-                                <a href="staff_complete_profile.php?id=<?= $patient['patient_id'] ?>" class="btn-complete">Complete Profile</a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php else: ?>
-                <p style="color: green; font-weight: bold;">✅ All patient profiles are completed!</p>
-            <?php endif; ?>
-        </section>
-
     </main>
 </div>
 

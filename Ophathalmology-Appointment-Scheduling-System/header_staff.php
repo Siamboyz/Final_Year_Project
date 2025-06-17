@@ -267,21 +267,36 @@
         const notificationIndicator = document.getElementById('notificationIndicator');
         const incompleteProfileIndicator = document.getElementById('incompleteProfileIndicator');
 
-        // Function to check for incomplete profiles (replace with actual AJAX/PHP call)
+        // Function to check for incomplete profiles (NOW WITH ACTUAL AJAX/PHP CALL)
         function checkForIncompleteProfiles() {
-            // This is a placeholder. In a real application, you would make an AJAX
-            // request to your server (e.g., to a PHP script) to check if there
-            // are any incomplete patient profiles.
-            // For demonstration, we'll randomly show the indicator.
-            const hasIncompleteProfiles = Math.random() > 0.5; // Simulate a check
-
-            if (hasIncompleteProfiles) {
-                notificationIndicator.style.display = 'flex'; // Show the main indicator
-                incompleteProfileIndicator.style.display = 'flex'; // Show the subpage indicator
-            } else {
-                notificationIndicator.style.display = 'none'; // Hide the main indicator
-                incompleteProfileIndicator.style.display = 'none'; // Hide the subpage indicator
-            }
+            fetch('check_incomplete_profiles.php') // Make an AJAX request to your new PHP file
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json(); // Parse the JSON response
+                })
+                .then(data => {
+                    if (data.hasIncompleteProfiles) {
+                        notificationIndicator.style.display = 'flex'; // Show the main indicator
+                        incompleteProfileIndicator.style.display = 'flex'; // Show the subpage indicator
+                        // Optional: Update notification count if 'count' is sent
+                        // if (data.count && data.count > 0) {
+                        //     notificationIndicator.textContent = data.count;
+                        // } else {
+                        //     notificationIndicator.textContent = '!';
+                        // }
+                    } else {
+                        notificationIndicator.style.display = 'none'; // Hide the main indicator
+                        incompleteProfileIndicator.style.display = 'none'; // Hide the subpage indicator
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching incomplete profiles:', error);
+                    // Optionally, you can hide indicators or show an error message if the fetch fails
+                    notificationIndicator.style.display = 'none';
+                    incompleteProfileIndicator.style.display = 'none';
+                });
         }
 
         // Call the function when the page loads
