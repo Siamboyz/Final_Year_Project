@@ -26,6 +26,8 @@ for ($i = 1; $i <= 12; $i++) {
     $monthlyData[] = mysqli_fetch_array($res)['total'];
 }
 
+$monthlyDataLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 $noShowLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 $noShowData = [];
 for ($i = 1; $i <= 12; $i++) {
@@ -141,8 +143,6 @@ $currentDate = date('Y-m-d');
             text-align: justify;
             margin-left: calc(100% - 80%);
             max-width: 100%; /* Limits the content width */
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
         h1 {
@@ -307,6 +307,98 @@ $currentDate = date('Y-m-d');
             border-radius: 5px;    /* optional: subtle rounding */
         }
 
+        #nextAvailableContainer .list-group-item {
+            /* Base Styling (Adjusted for "Box" appearance) */
+            border: 1px solid #e0e0e0; /* Subtle border for definition */
+            border-radius: 12px; /* Softer, more modern rounded corners */
+            margin-bottom: 18px; /* Increased spacing between items for distinct boxes */
+            padding: 18px 22px; /* More generous padding inside the box */
+            display: flex;
+            flex-direction: column; /* Stack content vertically within each box */
+            justify-content: center; /* Center content vertically */
+            align-items: flex-start; /* Align items to the start (left) */
+            transition: all 0.3s ease; /* Smooth transitions for hover effects */
+            position: relative; /* Needed for absolute positioning of accent if desired */
+
+            /* Colors and Shadows for a Professional Look */
+            background: #ffffff; /* Solid white background for a clean box */
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); /* More pronounced, soft shadow for lift */
+
+            /* Font Styling */
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-weight: 500; /* Slightly less bold for general text */
+            color: #333;
+            font-size: 0.98rem;
+        }
+
+        #nextAvailableContainer .list-group-item:hover {
+            transform: translateY(-5px); /* More noticeable lift effect on hover */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
+            cursor: pointer; /* Indicate interactivity */
+        }
+
+        /* Accent Bar on the Left (Optional, but adds visual flair) */
+        #nextAvailableContainer .list-group-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px; /* Width of the accent bar */
+            height: 100%;
+            background-color: #007bff; /* A prominent brand color blue */
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+            transition: background-color 0.3s ease;
+        }
+
+        #nextAvailableContainer .list-group-item:hover::before {
+            background-color: #0056b3; /* Darker shade on hover */
+        }
+
+        /* Specific styling for the text within the list item */
+        #nextAvailableContainer .list-group-item span {
+            display: block; /* Make each span take its own line */
+            margin-bottom: 8px; /* Space between doctor name and date */
+        }
+
+        #nextAvailableContainer .list-group-item span:last-child {
+            margin-bottom: 0; /* Remove margin from the last span */
+        }
+
+        #nextAvailableContainer .list-group-item span strong {
+            color: #1a237e; /* A deep, professional blue for doctor's name (Indigo 900) */
+            font-size: 1.1rem; /* Slightly larger for the name */
+            font-weight: 700; /* Make doctor's name very prominent */
+            margin-bottom: 5px; /* Space below doctor's name */
+        }
+
+        #nextAvailableContainer .list-group-item .text-primary {
+            color: #28a745 !important; /* A vibrant green for availability (Success color) */
+            font-weight: 600; /* Make the date stand out */
+            font-size: 1rem; /* Consistent size */
+        }
+
+        /* Styling for no data/error messages (kept similar, but adjusted to fit new box style) */
+        #nextAvailableContainer .list-group-item.text-muted {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            box-shadow: none;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        #nextAvailableContainer .list-group-item.text-danger {
+            background-color: #ffebee; /* Light red background */
+            color: #d32f2f; /* Darker red text */
+            text-align: center;
+            border: 1px solid #ef9a9a; /* Light red border */
+            box-shadow: none;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 991.98px) {
             .main-container {
@@ -397,6 +489,31 @@ $currentDate = date('Y-m-d');
         </div>
     </div>
 
+    <!-- System Monitoring Section (Admin Only) -->
+    <div class="card bg-light mb-4">
+        <div class="card-header fw-bold">🔧 System Status</div>
+        <div class="card-body">
+            <?php
+            // ✅ Check database connection
+            if ($conn) {
+                echo '<p>📡 <strong>Database Status:</strong> <span id="dbStatus" class="text-muted">Checking...</span></p>';
+            } else {
+                echo '<p>📡 <strong>Database Status:</strong> <span id="dbStatus" class="text-muted">Offline</span></p>';
+            }
+
+            // ✅ Simulate API status check (in real cases, you could ping an internal endpoint)
+            $apiStatus = @file_get_contents('report_ajax.php') !== false ? 'Online' : 'Offline';
+
+            echo '<p>🌐 <strong>API Response:</strong> ';
+            echo $apiStatus === 'Online'
+                ? '<span id="apiStatus" class="text-muted">Checking...</span>'
+                : '<span id="apiStatus" class="text-muted">API not responding</span>';
+            echo '</p>';
+            ?>
+
+            <p>🕒 <strong>Last Data Sync:</strong> <span id="lastSyncTime">Loading...</span></p>
+        </div>
+    </div>
 
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-sm-6">
@@ -484,7 +601,7 @@ $currentDate = date('Y-m-d');
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="section-title">⭐ Top 5 Doctors by Appointments</h5>
+                    <h5 class="section-title">🩺 Doctors by Total Appointments</h5>
                     <div class="chart-container">
                         <canvas id="doctorChart"></canvas>
                     </div>
@@ -533,6 +650,20 @@ $currentDate = date('Y-m-d');
                     <h5 class="section-title">📉 No-Show Trends (Monthly Missed Appointments)</h5>
                     <div class="chart-container">
                         <canvas id="noShowChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+    <!-- After doctorUtilizationChart and noShowChart -->
+    <div class="row g-3">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="section-title">🔮 Next Available Appointment Day (Per Doctor)</h5>
+                    <div id="nextAvailableContainer" class="list-group">
+                        <!-- JS will insert doctor availability here -->
                     </div>
                 </div>
             </div>
@@ -889,6 +1020,65 @@ $currentDate = date('Y-m-d');
         });
 
     }); // End of DOMContentLoaded
+
+    function fetchNextAvailableDays() {
+        fetch('admin_next_doctor_available_day.php')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('nextAvailableContainer');
+                container.innerHTML = '';
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="list-group-item text-muted">No data available</div>';
+                    return;
+                }
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'list-group-item';
+                    div.innerHTML = `
+          <span>👨‍⚕️ <strong>${item.doctor}</strong></span>
+          <span class="text-success">🗂️ Total Appointments: ${item.total_appointments}</span><br>
+          <span class="text-primary">📅 ${item.next_available_day}</span>
+        `;
+                    container.appendChild(div);
+                });
+            })
+            .catch(err => {
+                console.error('❌ Failed to fetch next available days:', err);
+                const container = document.getElementById('nextAvailableContainer');
+                container.innerHTML = '<div class="list-group-item text-danger">Error loading data</div>';
+            });
+    }
+
+    fetchNextAvailableDays(); // Auto load
+
+    function updateSystemStatus() {
+        fetch('status.php')
+            .then(res => res.json())
+            .then(data => {
+                const dbEl = document.getElementById('dbStatus');
+                const apiEl = document.getElementById('apiStatus');
+                const syncEl = document.getElementById('lastSyncTime');
+
+                dbEl.innerText = data.db;
+                dbEl.className = data.db === 'Online' ? 'text-success' : 'text-danger';
+
+                apiEl.innerText = data.api === 'Online' ? 'All APIs working' : 'API not responding';
+                apiEl.className = data.api === 'Online' ? 'text-success' : 'text-danger';
+
+                syncEl.innerText = data.lastSync;
+            })
+            .catch(err => {
+                document.getElementById('dbStatus').innerText = 'Error';
+                document.getElementById('apiStatus').innerText = 'Error';
+                document.getElementById('lastSyncTime').innerText = 'Unavailable';
+            });
+    }
+
+    // Initial load
+    updateSystemStatus();
+
+    // Refresh every 2 minutes (120,000ms)
+    setInterval(updateSystemStatus, 120000);
 </script>
 </body>
 </html>
