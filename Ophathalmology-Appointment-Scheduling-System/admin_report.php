@@ -823,7 +823,7 @@ $currentDate = date('Y-m-d');
             data: {
                 labels: <?= json_encode($monthlyDataLabels) ?>, // Labels are fixed for monthly
                 datasets: [{
-                    label: 'Booked',
+                    label: 'Appointments',
                     data: <?= json_encode($monthlyData) ?>, // Initial data from PHP (full current year)
                     borderColor: '#42a5f5',
                     backgroundColor: 'rgba(66, 165, 245, 0.2)',

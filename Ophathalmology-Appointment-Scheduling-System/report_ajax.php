@@ -64,7 +64,7 @@ for ($i = 1; $i <= 12; $i++) {
         SELECT COUNT(*) AS total
         FROM appointment
         WHERE MONTH(apt_date) = $i
-        AND YEAR(apt_date) = YEAR(CURDATE())
+        AND YEAR(apt_date) = YEAR(CURDATE()) AND apt_status = 'Completed'
     ");
     $data['monthly_data'][] = mysqli_fetch_array($res)['total'];
 }
