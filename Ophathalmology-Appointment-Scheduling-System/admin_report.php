@@ -308,95 +308,121 @@ $currentDate = date('Y-m-d');
         }
 
         #nextAvailableContainer .list-group-item {
-            /* Base Styling (Adjusted for "Box" appearance) */
-            border: 1px solid #e0e0e0; /* Subtle border for definition */
-            border-radius: 12px; /* Softer, more modern rounded corners */
-            margin-bottom: 18px; /* Increased spacing between items for distinct boxes */
-            padding: 18px 22px; /* More generous padding inside the box */
+            /* Box Container Styling: Elevated & Clean */
+            border: none; /* No explicit border, relying on shadow for definition */
+            border-radius: 10px; /* Even softer, more prominent rounded corners */
+            margin-bottom: 20px; /* Slightly increased space between items for an 'airy' feel */
+            padding: 22px 30px; /* More generous padding inside for luxury feel */
             display: flex;
-            flex-direction: column; /* Stack content vertically within each box */
-            justify-content: center; /* Center content vertically */
-            align-items: flex-start; /* Align items to the start (left) */
-            transition: all 0.3s ease; /* Smooth transitions for hover effects */
-            position: relative; /* Needed for absolute positioning of accent if desired */
+            flex-direction: column;
+            align-items: flex-start;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother, more distinct transitions */
+            position: relative;
+            overflow: hidden; /* Ensures anything outside the border-radius is hidden */
 
-            /* Colors and Shadows for a Professional Look */
-            background: #ffffff; /* Solid white background for a clean box */
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); /* More pronounced, soft shadow for lift */
+            /* Visuals: Subtle Gradient & Refined Shadow */
+            background: linear-gradient(145deg, #ffffff, #f0f2f5); /* Very subtle, cool gradient */
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); /* More diffuse, premium shadow */
 
-            /* Font Styling */
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            font-weight: 500; /* Slightly less bold for general text */
-            color: #333;
+            /* Font Baseline */
+            font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* Modern, clean font preference */
             font-size: 0.98rem;
+            color: #4a5568; /* A sophisticated dark grey */
         }
 
         #nextAvailableContainer .list-group-item:hover {
-            transform: translateY(-5px); /* More noticeable lift effect on hover */
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
-            cursor: pointer; /* Indicate interactivity */
+            transform: translateY(-7px); /* More pronounced lift on hover */
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
+            cursor: pointer;
         }
 
-        /* Accent Bar on the Left (Optional, but adds visual flair) */
+        /* Accent Top Border (Alternative to left bar, or combined) */
+        /* This will create a thin accent line at the top of the box */
         #nextAvailableContainer .list-group-item::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            width: 6px; /* Width of the accent bar */
-            height: 100%;
-            background-color: #007bff; /* A prominent brand color blue */
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-            transition: background-color 0.3s ease;
+            width: 100%;
+            height: 4px; /* Thin top border */
+            background: linear-gradient(90deg, #007bff, #6f42c1); /* A vibrant, modern gradient accent */
+            border-top-left-radius: 1px;
+            border-top-right-radius: 1px;
+            transition: all 0.3s ease-in-out;
+            transform: translateY(-100%); /* Start off-screen */
+            opacity: 0;
         }
 
         #nextAvailableContainer .list-group-item:hover::before {
-            background-color: #0056b3; /* Darker shade on hover */
+            transform: translateY(0); /* Slide in on hover */
+            opacity: 1;
         }
 
-        /* Specific styling for the text within the list item */
+        /* Individual Content Lines within the Box */
         #nextAvailableContainer .list-group-item span {
-            display: block; /* Make each span take its own line */
-            margin-bottom: 8px; /* Space between doctor name and date */
+            display: block;
+            margin-bottom: 7px; /* Fine-tuned spacing between lines */
+            line-height: 1.5; /* Slightly relaxed line height for readability */
         }
 
         #nextAvailableContainer .list-group-item span:last-child {
-            margin-bottom: 0; /* Remove margin from the last span */
+            margin-bottom: 0;
         }
 
+        /* Doctor's Name Styling */
         #nextAvailableContainer .list-group-item span strong {
-            color: #1a237e; /* A deep, professional blue for doctor's name (Indigo 900) */
-            font-size: 1.1rem; /* Slightly larger for the name */
-            font-weight: 700; /* Make doctor's name very prominent */
-            margin-bottom: 5px; /* Space below doctor's name */
+            color: #2c3e50; /* Darker, more formal grey for the name */
+            font-size: 1.3rem; /* Prominent font size for the doctor's name */
+            font-weight: 800; /* Extra bold for strong presence */
+            letter-spacing: -0.02em; /* Slightly tighter letter spacing for modern look */
+            margin-bottom: 8px; /* More space below the main name */
         }
 
+        /* Total Appointments Styling */
+        #nextAvailableContainer .list-group-item .text-success {
+            color: #14713c !important; /* Brighter, more friendly green */
+            font-weight: 600;
+            font-size: 1rem; /* Slightly larger for clarity */
+            display: flex;
+            align-items: center;
+            gap: 9px; /* More space between icon and text */
+            margin-top: 5px; /* Add a little space if needed after doctor's name */
+        }
+
+        /* Next Available Day Styling */
         #nextAvailableContainer .list-group-item .text-primary {
-            color: #28a745 !important; /* A vibrant green for availability (Success color) */
-            font-weight: 600; /* Make the date stand out */
-            font-size: 1rem; /* Consistent size */
+            color: #e67e22 !important; /* A bolder, more commanding orange */
+            font-weight: 600;
+            font-size: 1rem; /* Slightly larger for clarity */
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-top: 5px; /* Add a little space if needed after previous line */
         }
 
-        /* Styling for no data/error messages (kept similar, but adjusted to fit new box style) */
+        /* Styling for messages (No data, Error) */
         #nextAvailableContainer .list-group-item.text-muted {
-            background-color: #f8f9fa;
-            color: #6c757d;
+            background-color: #fcfcfc;
+            color: #90a4ae; /* Softer muted color */
             text-align: center;
-            border: 1px solid #e0e0e0;
+            border: 1px dashed #cfd8dc; /* Dashed border for informational state */
             box-shadow: none;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 20px;
+            margin-top: 15px;
+            font-style: italic;
+            border-radius: 12px;
         }
 
         #nextAvailableContainer .list-group-item.text-danger {
-            background-color: #ffebee; /* Light red background */
-            color: #d32f2f; /* Darker red text */
+            background-color: #ffe0e0; /* Softer red background */
+            color: #c0392b; /* Darker, professional red */
             text-align: center;
-            border: 1px solid #ef9a9a; /* Light red border */
+            border: 1px solid #e74c3c;
             box-shadow: none;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 20px;
+            margin-top: 15px;
+            font-weight: 600;
+            border-radius: 12px;
         }
 
         /* Responsive adjustments */
@@ -1036,7 +1062,7 @@ $currentDate = date('Y-m-d');
                     div.className = 'list-group-item';
                     div.innerHTML = `
           <span>👨‍⚕️ <strong>${item.doctor}</strong></span>
-          <span class="text-success">🗂️ Total Appointments: ${item.total_appointments}</span><br>
+          <span class="text-success">🗂️ Total Appointments: ${item.total_appointments}</span>
           <span class="text-primary">📅 ${item.next_available_day}</span>
         `;
                     container.appendChild(div);
