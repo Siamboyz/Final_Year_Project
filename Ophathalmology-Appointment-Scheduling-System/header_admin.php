@@ -286,12 +286,6 @@
                 margin-top: 0; /* Remove top margin on container, header handles space */
             }
 
-            .main-content {
-                margin-left: 0; /* Main content takes full width */
-                width: 100%; /* Ensure full width */
-                padding-top: 70px; /* Keep padding for header */
-            }
-
             /* Adjust fixed logout button for mobile sidebar */
             ul li.logout {
                 position: absolute; /* Change to absolute within sidebar for scrolling */

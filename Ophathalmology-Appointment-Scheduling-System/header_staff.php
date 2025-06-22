@@ -8,6 +8,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; /* Add this to remove default body margin */
         }
 
         /* Header Styling */
@@ -130,6 +131,14 @@
             flex-shrink: 0; /* Prevent it from shrinking */
         }
 
+        /* --- NEW: Hamburger Menu Icon Styling --- */
+        .hamburger-menu {
+            display: none; /* Hidden by default, shown on smaller screens */
+            font-size: 28px;
+            color: rgb(1, 46, 72);
+            cursor: pointer;
+            margin-right: 20px;
+        }
 
         /* Sidebar Navigation */
         .container {
@@ -137,6 +146,7 @@
             width: 100%;
             margin-top: 50px; /* Creates space below header */
             flex-grow: 1; /* Ensures sidebar grows properly */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
 
         .sidebar {
@@ -145,18 +155,23 @@
             border-right: 2px solid #ddd;
             display: flex;
             flex-direction: column;
-            height: 100%;
+            /* Original height: 100% -> changed to calc for fixed header */
+            height: calc(100vh - 50px); /* Adjust height to fill remaining viewport, considering header */
             position: fixed;
             left: 0;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Add shadow for better visual */
+            transition: transform 0.3s ease-in-out; /* Smooth transition for sliding */
+            z-index: 990; /* Ensure sidebar is behind header but above main content when open on mobile */
         }
 
         .sidebar ul {
             display: flex;
             flex-direction: column;
-            height: 100vh; /* full height of the sidebar */
+            height: 100%; /* full height of the sidebar */
             padding: 0;
             margin: 0;
             list-style-type: none;
+            overflow-y: auto; /* Enable scrolling for long menus on small screens */
         }
 
         .sidebar ul li {
@@ -195,20 +210,103 @@
 
         ul li.logout {
             margin-top: auto; /* pushes it to the bottom */
-            position: fixed;
+            position: fixed; /* Keep fixed for desktop, adjust for mobile */
             bottom: 0;
-            width: 20%;
+            width: 20%; /* Keep 20% for desktop */
+            border-top: 1px solid #eee; /* Add a top border for logout */
         }
 
         .logout .icon {
             margin-right: 10px;
         }
 
+        /* Media Queries for Responsiveness */
+
+        /* Tablets and smaller (e.g., max-width: 768px) */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                justify-content: flex-start; /* Align items to start for hamburger-logo-userinfo */
+            }
+
+            .hamburger-menu {
+                display: block; /* Show hamburger menu */
+                order: -1; /* Place it first in the flex container */
+                margin-right: 15px; /* Space between hamburger and logo */
+            }
+
+            .header .logo {
+                font-size: 18px;
+                white-space: nowrap; /* Prevent logo wrapping */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: calc(100% - 180px); /* Adjust max-width considering hamburger and user info/notif */
+            }
+
+            .header .user-info-wrapper {
+                margin-left: auto; /* Push user info to the right */
+            }
+
+            .header .user-info {
+                display: none; /* Hide welcome text on smaller screens */
+            }
+
+            .sidebar {
+                width: 250px; /* Fixed width for collapsed sidebar */
+                transform: translateX(-100%); /* Hide sidebar off-screen to the left */
+                top: 0; /* Align to top of viewport */
+                height: 100vh; /* Full viewport height */
+                box-shadow: 5px 0 10px rgba(0, 0, 0, 0.2); /* Stronger shadow when slid out */
+                z-index: 1000; /* Bring sidebar above everything else when open */
+            }
+
+            .sidebar.show {
+                transform: translateX(0); /* Slide in sidebar */
+            }
+
+            .container {
+                margin-top: 0; /* Remove top margin on container, header handles space */
+            }
+
+            /* Adjust fixed logout button for mobile sidebar */
+            ul li.logout {
+                position: absolute; /* Change to absolute within sidebar for scrolling */
+                bottom: 0;
+                width: 100%; /* Take full width of sidebar */
+                padding-bottom: 10px; /* Add some padding at the bottom */
+                background-color: #ffffff; /* Match sidebar background */
+            }
+        }
+
+        /* Small mobile screens (e.g., max-width: 480px) */
+        @media (max-width: 480px) {
+            .header {
+                padding: 12px 15px;
+            }
+            .hamburger-menu {
+                font-size: 24px;
+                margin-right: 10px;
+            }
+            .header .logo {
+                font-size: 15px;
+                max-width: calc(100% - 140px); /* Adjust for smaller hamburger/notif icon */
+            }
+            .notification-icon {
+                font-size: 18px;
+            }
+            .notification-indicator {
+                width: 12px;
+                height: 12px;
+                font-size: 8px;
+            }
+        }
     </style>
 </head>
 <body>
 
 <div class="header">
+    <div class="hamburger-menu" id="hamburgerMenu">
+        &#9776; </div>
     <div class="logo">
         <span>OASS | OPHTHALMOLOGY APPOINTMENT SCHEDULING SYSTEM</span>
     </div>
@@ -229,7 +327,7 @@
 </div>
 
 <div class="container">
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
         <?php
         $current_page = basename($_SERVER['PHP_SELF']);
         ?>
@@ -267,6 +365,11 @@
         const notificationIndicator = document.getElementById('notificationIndicator');
         const incompleteProfileIndicator = document.getElementById('incompleteProfileIndicator');
 
+        // --- NEW: Elements for hamburger menu ---
+        const hamburgerMenu = document.getElementById('hamburgerMenu');
+        const sidebar = document.getElementById('sidebar');
+        const body = document.body; // Reference to the body for preventing scroll
+
         // Function to check for incomplete profiles (NOW WITH ACTUAL AJAX/PHP CALL)
         function checkForIncompleteProfiles() {
             fetch('check_incomplete_profiles.php') // Make an AJAX request to your new PHP file
@@ -287,8 +390,9 @@
                         //     notificationIndicator.textContent = '!';
                         // }
                     } else {
-                        notificationIndicator.style.display = 'none'; // Hide the main indicator
-                        incompleteProfileIndicator.style.display = 'none'; // Hide the subpage indicator
+                        // Only hide if there are no requests
+                        notificationIndicator.style.display = 'none';
+                        incompleteProfileIndicator.style.display = 'none';
                     }
                 })
                 .catch(error => {
@@ -305,25 +409,76 @@
         notificationIcon.addEventListener('click', function(event) {
             event.stopPropagation(); // Prevent document click from closing immediately
             notificationDropdown.classList.toggle('show');
-            // Optionally, hide the main indicator once the dropdown is opened
-            // notificationIndicator.style.display = 'none'; // Uncomment if you want it to hide on click
+            // Close sidebar if open when notification is clicked (on small screens)
+            if (window.innerWidth <= 768 && sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                body.style.overflow = ''; // Restore body scroll
+            }
         });
 
-        // Close the dropdown if the user clicks outside of it
+        // Close dropdown and sidebar if the user clicks outside of them
         document.addEventListener('click', function(event) {
+            // Close notification dropdown
             if (!notificationIcon.contains(event.target) && !notificationDropdown.contains(event.target)) {
                 notificationDropdown.classList.remove('show');
+            }
+
+            // Close sidebar if clicked outside (only on small screens)
+            // Ensure click is not on sidebar itself, nor on the hamburger menu
+            if (window.innerWidth <= 768 && sidebar.classList.contains('show') &&
+                !sidebar.contains(event.target) && !hamburgerMenu.contains(event.target)) {
+                sidebar.classList.remove('show');
+                body.style.overflow = ''; // Restore body scroll
             }
         });
 
         // Optionally, hide the subpage indicator when its link is clicked
         incompleteProfileIndicator.closest('a').addEventListener('click', function() {
             incompleteProfileIndicator.style.display = 'none';
-            // You might also want to re-evaluate the main notification indicator here
-            // if there are no other notifications remaining after this one is cleared.
+            // Re-check for other notifications to update the main indicator
+            checkForIncompleteProfiles();
+            // Close dropdown after clicking a link
+            notificationDropdown.classList.remove('show');
+            // Close sidebar if on mobile after clicking a link
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('show');
+                body.style.overflow = '';
+            }
+        });
+
+        // --- NEW: Hamburger Menu Toggle Logic ---
+        hamburgerMenu.addEventListener('click', function(event) {
+            event.stopPropagation(); // Prevent document click listener from immediately closing it
+            sidebar.classList.toggle('show');
+            // Prevent body scrolling when sidebar is open on small screens
+            if (sidebar.classList.contains('show')) {
+                body.style.overflow = 'hidden';
+            } else {
+                body.style.overflow = '';
+            }
+            // Close notification dropdown if sidebar is opened
+            notificationDropdown.classList.remove('show');
+        });
+
+        // Close sidebar if a link inside it is clicked (on small screens)
+        sidebar.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('show');
+                    body.style.overflow = ''; // Restore body scroll
+                }
+            });
+        });
+
+        // Handle window resize to reset sidebar state for larger screens
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('show');
+                body.style.overflow = ''; // Ensure scroll is restored on larger screens
+            }
         });
     });
 </script>
 
 </body>
-</html>
+</html>"
