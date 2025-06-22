@@ -98,8 +98,7 @@ mysqli_close($conn);
             background-color: #f0f2f5;
             color: #34495e;
             margin: 0;
-            padding: 20px;
-            line-height: 1.6;
+            padding: 25px;
         }
 
         .main-container {
