@@ -1052,20 +1052,69 @@ $currentDate = date('Y-m-d');
             .then(res => res.json())
             .then(data => {
                 const container = document.getElementById('nextAvailableContainer');
-                container.innerHTML = '';
+                container.innerHTML = '';  // Clear previous content
+
                 if (data.length === 0) {
                     container.innerHTML = '<div class="list-group-item text-muted">No data available</div>';
                     return;
                 }
+
+                // Loop through each doctor and create clickable elements
                 data.forEach(item => {
+                    // Log doctor_id to verify it's being passed
+                    console.log("Doctor ID:", item.doctor_id);
+                    // Log the full next_available_day string from PHP response
+                    console.log("Next Available Day (from PHP):", item.next_available_day);
+                    // Log available minutes (should be present from PHP modification)
+                    console.log("Available Minutes (from PHP):", item.available_minutes);
+
+                    // Create the div element for the doctor
                     const div = document.createElement('div');
                     div.className = 'list-group-item';
+                    div.setAttribute('data-doctor-id', item.doctor_id);
+
+                    // The next_available_day string might contain "YYYY-MM-DD (X mins available)"
+                    // We need to extract just the YYYY-MM-DD part for the URL 'date' parameter
+                    const dateMatch = item.next_available_day.match(/^(\d{4}-\d{2}-\d{2})/);
+                    let selectedDateForUrl = '';
+                    if (dateMatch && dateMatch[1]) {
+                        selectedDateForUrl = dateMatch[1];
+                    } else {
+                        // Fallback or error handling if date format is not as expected
+                        console.error('Could not extract date from next_available_day:', item.next_available_day);
+                        // If no valid date can be extracted, you might want to skip this item or show an error
+                        return;
+                    }
+
+                    // Store the extracted date and available minutes in data attributes
+                    // so they are easily accessible in the click event listener
+                    div.setAttribute('data-selected-date', selectedDateForUrl);
+                    div.setAttribute('data-available-minutes', item.available_minutes); // Ensure PHP sends this
+
+                    // Set the inner HTML of the div
                     div.innerHTML = `
-          <span>👨‍⚕️ <strong>${item.doctor}</strong></span>
-          <span class="text-success">🗂️ Total Appointments: ${item.total_appointments}</span>
-          <span class="text-primary">📅 ${item.next_available_day}</span>
-        `;
-                    container.appendChild(div);
+                    <span>👨‍⚕️ <strong>${item.doctor}</strong></span>
+                    <span class="text-success">🗂️ Total Appointments: ${item.total_appointments}</span>
+                    <span class="text-primary">📅 ${item.next_available_day}</span>
+                `;
+
+                    // Event listener for redirecting to the doctor’s appointment page
+                    div.addEventListener('click', () => {
+                        const doctorId = div.getAttribute('data-doctor-id');
+                        const dateToPass = div.getAttribute('data-selected-date'); // Use the extracted date
+                        const availableMinutesToPass = div.getAttribute('data-available-minutes'); // Use available minutes
+
+                        // Construct the URL with doctorId, date, and available_minutes
+                        const redirectUrl = 'admin_view_doctor_appointments.php?' +
+                            'doctor_id=' + encodeURIComponent(doctorId) +
+                            '&date=' + encodeURIComponent(dateToPass) +
+                            '&available_minutes=' + encodeURIComponent(availableMinutesToPass);
+
+                        console.log("Redirecting to:", redirectUrl); // Log the final URL
+                        window.location.href = redirectUrl;
+                    });
+
+                    container.appendChild(div);  // Append the doctor div to the container
                 });
             })
             .catch(err => {
@@ -1075,7 +1124,7 @@ $currentDate = date('Y-m-d');
             });
     }
 
-    fetchNextAvailableDays(); // Auto load
+    fetchNextAvailableDays();  // Call this function on page load
 
     function updateSystemStatus() {
         fetch('status.php')
