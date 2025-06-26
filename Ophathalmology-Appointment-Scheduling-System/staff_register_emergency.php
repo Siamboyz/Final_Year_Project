@@ -56,6 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['emergency'])) {
                 SELECT d.doctor_id, d.name 
                 FROM doctor d 
                 WHERE d.status = 'active' 
+                  AND d.room_id IS NOT NULL 
+                  AND d.room_id IN (SELECT room_id FROM room) 
                   AND d.doctor_id NOT IN (
                       SELECT doctor_id FROM session 
                       WHERE s_date = '$today' 

@@ -27,13 +27,16 @@ $defaultTime = date('H:i'); // You can change this to fixed time like '09:00'
 // Fetch doctors who are available today
 $doctorQuery = "SELECT d.doctor_id, d.name 
                 FROM doctor d
-                WHERE  d.status = 'active'
+                WHERE d.status = 'active'
+                AND d.room_id IS NOT NULL 
+                AND d.room_id IN (SELECT room_id FROM room)
                 AND d.doctor_id NOT IN (
                     SELECT doctor_id FROM session 
                     WHERE s_date = '$today' 
                     AND s_status IN ('On Leave', 'Unavailable')
                 )
                 ORDER BY d.name";
+
 $doctorResult = mysqli_query($conn, $doctorQuery);
 
 // Handle form submission
